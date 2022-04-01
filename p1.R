@@ -110,6 +110,8 @@ LRactualTest
 
 LRt <- table(predictions=LRpredTest, actual = LRactualTest)
 LRt # Confusion matrix
+hist(LRt)
+
 LRaccuracy <- sum(diag(LRt))/sum(LRt)
 LRaccuracy
 
