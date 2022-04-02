@@ -1,7 +1,7 @@
 setwd("C:/Data/BujuBanton/msc/comp6115kdda/worksheets/Project1")
 getwd()
 rm(list = ls())
-options(scipen = 99999)
+#options(scipen = 99999)
 
 #install needed libraries
 #installus <- c("rpart","raprt.plot","pROC","caTools","keras")
@@ -86,11 +86,8 @@ LRp_value
 
 ###Step 4 - Use the fitted model to do predictions for the test data
 #LRprobTest- Probability for Test data, LRpredTest - Predictions for Test data, actual - Actual Value in test data
-
 LRprobTest=predict(LRModel, LRtestData, type = "response")  # Predict probabilities
 LRprobTest
-LRtestData$LRprobTest <- LRpredTest
-
 
 #Recode probability to classification
 LRpredVal <- ifelse(LRprobTest >= 0.5, 1, 0)
@@ -107,7 +104,6 @@ LRactualTest <-LRtestData$TenYearCHD
 LRactualTest
 
 ### Step 5 - Create Confusion Matrix and compute the misclassification error
-
 LRt <- table(predictions=LRpredTest, actual = LRactualTest)
 LRt # Confusion matrix
 hist(LRt)
@@ -133,16 +129,17 @@ ggplot(data=LRpredicted_data, aes(x=Rank, y=Probs)) +
 
 
 ### Step 6 - Use model to make predictions on newdata. Note we can specify the newData as data.frame with one or many records
-# male = 1, age = 1, education = 1, currentSmoker = 1, cigsPerDay = 1, BPMeds = 1, prevalentStroke = 1, prevalentHyp = 1, diabetes = 1, totChol = 1, sysBP = 1, diaBP = 1, BMI = 1, heartRate = 1, glucose = 1 TenYearCHD
-#newData <- data.frame(male = 1, age = 47, cigsPerDay = 9.003089, sysBP = 102.0, glucose = 81.96675 )
-#newData <- data.frame(male = 0, age = 61, cigsPerDay = 30, sysBP = 150.0, glucose = 103 )
-#newData <- data.frame(male = 1, age = 47, cigsPerDay = 20, sysBP = 102.0, glucose = 66 )
-newData <- data.frame(male = 1, age = 47, education = 1.97895, currentSmoker = 1, cigsPerDay = 9.003089, BPMeds = 0.02962963, prevalentStroke = 0, prevalentHyp = 0, diabetes = 0, totChol = 236.7216, sysBP = 102.0, diaBP = 68.0, BMI = 25.80201, heartRate = 75.87892, glucose = 81.96675 )
+LRnewData <- data.frame(male = 0, age = 50, education = 0, currentSmoker = 0, cigsPerDay = 9, BPMeds = 0, prevalentStroke = 0, prevalentHyp = 0, diabetes = 0, totChol = 236, sysBP = 102.0, diaBP = 71, BMI = 100, heartRate = 100, glucose = 200 )
 
-predProbability <-predict(LRModel, newData, type='response')
+# terminal nodes
+# age
+# glucose
+# diaBP
+# BMI
+predProbability <-predict(LRModel, LRnewData, type='response')
 predProbability
 
 ## Performance measures
 # Simplicity =  coefficients
-# Accuracy = 0.8528718 0r 0.85
-# AUC = 0.7071 0r 0.71
+# Accuracy = 0.8552321 0r 0.86
+# AUC = 0.7011 0r 0.7

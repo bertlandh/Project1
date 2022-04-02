@@ -3,24 +3,73 @@ getwd()
 rm(list = ls())
 #options(scipen = 99999)
 
-#Authors BH&OTB
+#install needed libraries
+#installus <- c("rpart","raprt.plot","pROC","caTools","keras")
+#install.packages(installus)
+
 library(rpart)
-library(readr)
-library(caTools)
-library(dplyr)
-library(party)
-library(partykit)
 library(rpart.plot)
-library(rpart)
 library(pROC)
+library(caTools)
 
 ### Step 1 - Load data and get summaries 
-dataset <- read.csv("framingham.csv") %>% # read in the data
-   mutate(TenYearCHD = factor(TenYearCHD)) # target variable dependent variable to factor
-         
-
+#dataset <- read.csv("framingham.csv",na.strings = c(""," "),stringsAsFactors = T)
+dataset <- read.csv("framingham.csv")
 summary(dataset)
 str(dataset)
+
+#how many missing value in each ro/column
+apply(dataset, 2,function(x) sum(is.na(x))) #number of NA per column
+
+## Replacing null values with the mean value
+dataset[is.na(dataset$education),"education"] <- mean(dataset$education,na.rm = T)
+dataset[is.na(dataset$cigsPerDay),"cigsPerDay"] <- mean(dataset$cigsPerDay, na.rm = T)
+dataset[is.na(dataset$BPMeds),"BPMeds"] <- mean(dataset$BPMeds,na.rm = T)
+dataset[is.na(dataset$totChol),"totChol"] <- mean(dataset$totChol,na.rm = T)
+dataset[is.na(dataset$BMI),"BMI"] <- mean(dataset$BMI,na.rm = T)
+dataset[is.na(dataset$heartRate),"heartRate"] <- mean(dataset$heartRate,na.rm = T)
+dataset[is.na(dataset$glucose),"glucose"] <- mean(dataset$glucose,na.rm = T)
+
+## Remove null values
+dataset <- dataset[!is.na(dataset$education),]
+dataset <- dataset[!is.na(dataset$cigsPerDay),]
+dataset <- dataset[!is.na(dataset$BPMeds),]
+dataset <- dataset[!is.na(dataset$totChol),]
+dataset <- dataset[!is.na(dataset$BMI),]
+dataset <- dataset[!is.na(dataset$heartRate),]
+dataset <- dataset[!is.na(dataset$glucose),]
+
+# Convert to factors
+#dataset$male <- as.factor(dataset$male)
+#dataset$currentSmoker <- as.factor(dataset$currentSmoker)
+#dataset$BPMeds <- as.factor(dataset$BPMeds)
+#dataset$prevalentStroke <- as.factor(dataset$prevalentStroke)
+#dataset$prevalentHyp <- as.factor(dataset$prevalentHyp)
+#dataset$diabetes <- as.factor(dataset$diabetes)
+
+# target variable dependent variable to factor
+dataset$TenYearCHD <- as.factor(dataset$TenYearCHD)
+
+
+## Rechecking for null values
+apply(dataset, 2,function(x) sum(is.na(x))) #number of NA per column
+summary(dataset)
+str(dataset)
+#plot(dataset)
+
+
+# save and reload
+write.csv(dataset,file = "whaterthenameis.csv",row.names = FALSE)
+dataset <- read.csv("whaterthenameis.csv",header = TRUE)
+
+dim(dataset)
+head(dataset, 10)
+
+#barplot(table(dataset$TenYearCHD), ylab ="Frequency", main = "Distribution of Target Class", col="lightblue")
+#hist(dataset$age)
+
+## CHD value counts
+table(dataset$TenYearCHD)
 
 ### Step 2 - Split data into training and testing data 
 set.seed(1)
@@ -31,13 +80,14 @@ DTtestData <- dataset[!DTDataset,]
 dim(DTtestData)
 
 ### Step 3 - Fit a Decision Tree using training data
-#DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
+# The . specifies all other columns ( Class ~ . )
+DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
 #DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
-DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData)  
+#Target Variable = TenYearCHD, Input Variables = All, split =gini or information gain
+#control = rpart.control for prepruning DT minsplit- min records at node for split to occur, maxdepth - depth of the DT
 
 # Fitting the model
-#rpart.plot(DTmodel, type=3, extra = 101, fallen.leaves = F, cex = 0.8) ##try extra with 2,8,4, 101
-rpart.plot(DTmodel) ##try extra with 2,8,4, 101
+rpart.plot(DTmodel, type=3, extra = 101, fallen.leaves = F, cex = 0.8) ##try extra with 2,8,4, 101
 
 summary(DTmodel) # detailed summary of splits
 DTmodel #prints the rules
@@ -66,8 +116,11 @@ DTAUC
 
 #A new dataframe with Predicted Prob, Actual Value and Predicted Value
 DTpredicted_data <- data.frame(Probs = DTprobTest, Actual_Value= DTactualTest ,Predicted_Value = DTpredTest )  #Create data frame with prob and predictions
+#predicted_data$Probs.0 <- Class 0 Probability
+#predicted_data$Probs.1 <-  Class 1 Probability
 DTpredicted_data <- DTpredicted_data[order(DTpredicted_data$Probs.1, decreasing=TRUE),] # Sort on Probabilities
 DTpredicted_data$Rank <- 1:nrow(DTpredicted_data) # Add a new variable rank
+
 
 library(ggplot2)
 
@@ -75,63 +128,24 @@ ggplot(data=DTpredicted_data, aes(x=Rank, y=Probs.1)) +
   geom_point(aes(color = DTpredicted_data$Actual_Value)) + xlab("Index") + ylab("Predicted Probability of getting Cardiovascular Diseases")
 
 ### Step 6 - Use model to make predictions on newdata. Note we can specify the newData as data.frame with one or many records
-DTnewData <- data.frame(male = 0, age = 50, education = 0, currentSmoker = 0, cigsPerDay = 9, BPMeds = 0, prevalentStroke = 0, prevalentHyp = 0, diabetes = 0, totChol = 236, sysBP = 102.0, diaBP = 71, BMI = 100, heartRate = 100, glucose = 200 )
+DTnewData <- data.frame(male = 1, age = 47, education = 1.97895, currentSmoker = 1, cigsPerDay = 9.003089, BPMeds = 0.02962963, prevalentStroke = 0, prevalentHyp = 0, diabetes = 0, totChol = 236.7216, sysBP = 102.0, diaBP = 68.0, BMI = 25.80201, heartRate = 75.87892, glucose = 81.96675 )
 
- 
-#2) age< 46.5 1199  80 0 (0.93327773 0.06672227) *
-#12) glucose< 161.5 1041 150 0 (0.85590778 0.14409222) *
-#  13) glucose>=161.5 9   1 1 (0.11111111 0.88888889) *
-#56) diaBP>=70.5 624 154 0 (0.75320513 0.24679487) *
-#  57) diaBP< 70.5 12   3 1 (0.25000000 0.75000000) *
-#58) BMI>=26.6 29  11 0 (0.62068966 0.37931034) *
-#  59) BMI< 26.6 17   4 1 (0.23529412 0.76470588) *
-#  15) glucose>=116.5 36  10 1 (0.27777778 0.72222222) *
-#
-##Convert to factors DTnewData
-#
-#DTnewData$male <- as.factor(DTnewData$male)
-#DTnewData$currentSmoker <- as.factor(DTnewData$currentSmoker)
-#DTnewData$BPMeds <- as.factor(DTnewData$BPMeds)
-#DTnewData$prevalentStroke <- as.factor(DTnewData$prevalentStroke)
-#DTnewData$prevalentHyp <- as.factor(DTnewData$prevalentHyp)
-#DTnewData$diabetes <- as.factor(DTnewData$diabetes)
-##
-#
 DTpredProbability <-predict(DTmodel, DTnewData, type='prob')
 DTpredProbability
-#
-## Performance measures - 
-#
-#set.seed(1), gini
+
+## Performnce measures - 
+#setseed(1), gini
 # Simplicity = 15 leaves
-# Accuracy = 0.8394965 0r 0.84
-# AUC = 0.6621 0r 0.66
-#
-#set.seed(1), information
+# Accuracy = 0.8363493
+# AUC = 0.6621
+
+#setseed(1), information
 # Simplicity = 10 leaves
-# Accuracy = 0.8394965 0r 0.84
-# AUC = 0.6621 0r 0.66
-#
-#set.seed(1), blank
-# Simplicity = 10 leaves
-# Accuracy = 0.8371361 0r 0.84
-# AUC = 0.6627 0r 0.66
-#
-#
-#* denotes terminal node
-#
-#1) root 2967 451 0 (0.84799461 0.15200539)  
-#2) age< 46.5 1199  80 0 (0.93327773 0.06672227) *
-#12) glucose< 161.5 1041 150 0 (0.85590778 0.14409222) *
-#  13) glucose>=161.5 9   1 1 (0.11111111 0.88888889) *
-#56) diaBP>=70.5 624 154 0 (0.75320513 0.24679487) *
-#  57) diaBP< 70.5 12   3 1 (0.25000000 0.75000000) *
-#58) BMI>=26.6 29  11 0 (0.62068966 0.37931034) *
-#  59) BMI< 26.6 17   4 1 (0.23529412 0.76470588) *
-#  15) glucose>=116.5 36  10 1 (0.27777778 0.72222222) *
-#
+# Accuracy = 0.8363493
+# AUC = 0.6621
+
 ### Step 7 - EXAMINING STABILITY - Creating Decile Plots for Class 1 or 0 Sort 
-#
+
 #-----Create empty df-------
 DTdecile<- data.frame(matrix(ncol=4,nrow = 0))
 colnames(DTdecile)<- c("Decile","per_correct_preds","No_correct_Preds","cum_preds")
@@ -162,5 +176,3 @@ while (DTx < nrow(DTpredicted_data)) {
 #------Stability plot (correct preds per decile)
 plot(DTdecile$Decile,DTdecile$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main="Stability Plot for Class 1")
 
-write.csv(dataset,file = "whaterthenameis.csv",row.names = FALSE)
-dataset <- read.csv("whaterthenameis.csv",header = TRUE)
