@@ -1,19 +1,16 @@
 setwd("C:/Data/BujuBanton/msc/comp6115kdda/worksheets/Project1")
 getwd()
 rm(list = ls())
-#options(scipen = 99999)
+options(scipen = 99999)
 
 #install needed libraries
-#installus <- c("rpart","raprt.plot","pROC","caTools","keras")
+#installus <- c("caTools")
 #install.packages(installus)
 
 library(caTools)
-#library(pROC)
-#library(keras)
-#library(dplyr)
 
 ### Step 1 - Load data and get summaries 
-dataset <- read.csv("framingham.csv")
+dataset <- read.csv("./data/framingham.csv")
 summary(dataset)
 str(dataset)
 
@@ -28,17 +25,6 @@ dataset[is.na(dataset$totChol),"totChol"] <- mean(dataset$totChol,na.rm = T)
 dataset[is.na(dataset$BMI),"BMI"] <- mean(dataset$BMI,na.rm = T)
 dataset[is.na(dataset$heartRate),"heartRate"] <- mean(dataset$heartRate,na.rm = T)
 dataset[is.na(dataset$glucose),"glucose"] <- mean(dataset$glucose,na.rm = T)
-
-#dataset$education <- NULL
-#dataset$currentSmoker <- NULL
-#dataset$BPMeds <- NULL
-#dataset$prevalentStroke <- NULL
-#dataset$prevalentHyp <- NULL
-#dataset$diabetes <- NULL
-#dataset$totChol <- NULL
-#dataset$diaBP <- NULL
-#dataset$BMI <- NULL
-#dataset$heartRate <- NULL
 
 # target variable dependent variable to factor
 dataset$TenYearCHD <- as.factor(dataset$TenYearCHD)
@@ -55,7 +41,6 @@ hist(dataset$age)
 ## CHD value counts
 table(dataset$TenYearCHD)
 
-
 ### Step 2 - Split data into training and testing data 
 set.seed(20)
 LRDataset <-sample.split(Y=dataset$TenYearCHD, SplitRatio = 0.7)
@@ -64,12 +49,10 @@ dim(LRtrainData)
 LRtestData <- dataset[!LRDataset,]
 dim(LRtestData)
 
-
 ### Step 3 - Fit a Logistic Model using training data
 #Target Variable = TenYearCHD, Input Vaiables = All, family = binomial (binary target variable) - Logistic regression using logit 
 LRModel <- glm(TenYearCHD ~ ., data=LRtrainData, family=binomial(link="logit"))
 summary(LRModel)
-
 
 # log likelihood
 logLik(LRModel)
@@ -127,7 +110,6 @@ library(ggplot2)
 ggplot(data=LRpredicted_data, aes(x=Rank, y=Probs)) + 
   geom_point(aes(color = LRpredicted_data$Actual_Value)) + xlab("Index") + ylab("Heart Disease Prediction")
 
-
 ### Step 6 - Use model to make predictions on newdata. Note we can specify the newData as data.frame with one or many records
 LRnewData <- data.frame(male = 0, age = 50, education = 0, currentSmoker = 0, cigsPerDay = 9, BPMeds = 0, prevalentStroke = 0, prevalentHyp = 0, diabetes = 0, totChol = 236, sysBP = 102.0, diaBP = 71, BMI = 100, heartRate = 100, glucose = 200 )
 
@@ -143,3 +125,6 @@ predProbability
 # Simplicity =  coefficients
 # Accuracy = 0.8552321 0r 0.86
 # AUC = 0.7011 0r 0.7
+
+write.csv(dataset,file = "./output/LR_BO_CHD.csv",row.names = FALSE)
+dataset <- read.csv("./output/LR_BO_CHD.csv",header = TRUE)

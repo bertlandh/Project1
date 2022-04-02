@@ -1,7 +1,11 @@
 setwd("C:/Data/BujuBanton/msc/comp6115kdda/worksheets/Project1")
 getwd()
 rm(list = ls())
-#options(scipen = 99999)
+options(scipen = 99999)
+
+#install needed libraries
+#installus <- c("rpart","raprt.plot","pROC","caTools","keras","readr","dplyr","party","partykit")
+#install.packages(installus)
 
 #Authors BH$OTB
 library(rpart)
@@ -15,12 +19,31 @@ library(rpart)
 library(pROC)
 
 ### Step 1 - Load data and get summaries 
-dataset <- read.csv("framingham.csv") %>% # read in the data
+dataset <- read.csv("./data/framingham.csv") %>% # read in the data
   mutate(TenYearCHD = factor(TenYearCHD)) # target variable dependent variable to factor
 
+## Replacing null values with the mean value
+dataset[is.na(dataset$education),"education"] <- as.integer(mean(dataset$education,na.rm = T))
+dataset[is.na(dataset$cigsPerDay),"cigsPerDay"] <- as.integer(mean(dataset$cigsPerDay, na.rm = T))
+dataset[is.na(dataset$BPMeds),"BPMeds"] <- as.integer(mean(dataset$BPMeds,na.rm = T))
+dataset[is.na(dataset$totChol),"totChol"] <- as.integer(mean(dataset$totChol,na.rm = T))
+dataset[is.na(dataset$BMI),"BMI"] <- as.integer(mean(dataset$BMI,na.rm = T))
+dataset[is.na(dataset$heartRate),"heartRate"] <- as.integer(mean(dataset$heartRate,na.rm = T))
+dataset[is.na(dataset$glucose),"glucose"] <- as.integer(mean(dataset$glucose,na.rm = T))
+
+## Remove null values
+dataset <- dataset[!is.na(dataset$education),]
+dataset <- dataset[!is.na(dataset$cigsPerDay),]
+dataset <- dataset[!is.na(dataset$BPMeds),]
+dataset <- dataset[!is.na(dataset$totChol),]
+dataset <- dataset[!is.na(dataset$BMI),]
+dataset <- dataset[!is.na(dataset$heartRate),]
+dataset <- dataset[!is.na(dataset$glucose),]
 
 summary(dataset)
 str(dataset)
+#how many missing value in each ro/column
+apply(dataset, 2,function(x) sum(is.na(x))) #number of NA per column
 
 ### Step 2 - Split data into training and testing data 
 set.seed(1)
@@ -37,7 +60,7 @@ DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData)
 
 # Fitting the model
 #rpart.plot(DTmodel, type=3, extra = 101, fallen.leaves = F, cex = 0.8) ##try extra with 2,8,4, 101
-rpart.plot(DTmodel) ##try extra with 2,8,4, 101
+rpart.plot(DTmodel)
 
 summary(DTmodel) # detailed summary of splits
 DTmodel #prints the rules
@@ -134,5 +157,5 @@ while (DTx < nrow(DTpredicted_data)) {
 #------Stability plot (correct preds per decile)
 plot(DTdecile$Decile,DTdecile$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main="Stability Plot for Class 1")
 
-write.csv(dataset,file = "whaterthenameis.csv",row.names = FALSE)
-dataset <- read.csv("whaterthenameis.csv",header = TRUE)
+write.csv(dataset,file = "./output/DT_BO_CHD.csv",row.names = FALSE)
+dataset <- read.csv("./output/DT_BO_CHD.csv",header = TRUE)
