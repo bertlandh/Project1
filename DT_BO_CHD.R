@@ -122,7 +122,7 @@ DTpredProbability
 # AUC = 0.6621 0r 0.66
 #
 #set.seed(1), blank
-# Accuracy = 0.8371361 0r 0.84
+# Accuracy = 0.8363493 0r 0.84
 # AUC = 0.6627 0r 0.66
 #
 ### Step 7 - EXAMINING STABILITY - Creating Decile Plots for Class 1 or 0 Sort 

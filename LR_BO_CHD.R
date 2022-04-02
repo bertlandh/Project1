@@ -18,13 +18,22 @@ str(dataset)
 apply(dataset, 2,function(x) sum(is.na(x))) #number of NA per column
 
 ## Replacing null values with the mean value
-dataset[is.na(dataset$education),"education"] <- mean(dataset$education,na.rm = T)
-dataset[is.na(dataset$cigsPerDay),"cigsPerDay"] <- mean(dataset$cigsPerDay, na.rm = T)
-dataset[is.na(dataset$BPMeds),"BPMeds"] <- mean(dataset$BPMeds,na.rm = T)
-dataset[is.na(dataset$totChol),"totChol"] <- mean(dataset$totChol,na.rm = T)
-dataset[is.na(dataset$BMI),"BMI"] <- mean(dataset$BMI,na.rm = T)
-dataset[is.na(dataset$heartRate),"heartRate"] <- mean(dataset$heartRate,na.rm = T)
-dataset[is.na(dataset$glucose),"glucose"] <- mean(dataset$glucose,na.rm = T)
+dataset[is.na(dataset$education),"education"] <- as.integer(mean(dataset$education,na.rm = T))
+dataset[is.na(dataset$cigsPerDay),"cigsPerDay"] <- as.integer(mean(dataset$cigsPerDay, na.rm = T))
+dataset[is.na(dataset$BPMeds),"BPMeds"] <- as.integer(mean(dataset$BPMeds,na.rm = T))
+dataset[is.na(dataset$totChol),"totChol"] <- as.integer(mean(dataset$totChol,na.rm = T))
+dataset[is.na(dataset$BMI),"BMI"] <- as.integer(mean(dataset$BMI,na.rm = T))
+dataset[is.na(dataset$heartRate),"heartRate"] <- as.integer(mean(dataset$heartRate,na.rm = T))
+dataset[is.na(dataset$glucose),"glucose"] <- as.integer(mean(dataset$glucose,na.rm = T))
+
+## Remove null values
+dataset <- dataset[!is.na(dataset$education),]
+dataset <- dataset[!is.na(dataset$cigsPerDay),]
+dataset <- dataset[!is.na(dataset$BPMeds),]
+dataset <- dataset[!is.na(dataset$totChol),]
+dataset <- dataset[!is.na(dataset$BMI),]
+dataset <- dataset[!is.na(dataset$heartRate),]
+dataset <- dataset[!is.na(dataset$glucose),]
 
 # target variable dependent variable to factor
 dataset$TenYearCHD <- as.factor(dataset$TenYearCHD)
@@ -118,13 +127,14 @@ LRnewData <- data.frame(male = 0, age = 50, education = 0, currentSmoker = 0, ci
 # glucose
 # diaBP
 # BMI
+
 predProbability <-predict(LRModel, LRnewData, type='response')
 predProbability
 
 ## Performance measures
 # Simplicity =  coefficients
 # Accuracy = 0.8552321 0r 0.86
-# AUC = 0.7011 0r 0.7
+# AUC = 0.7013 0r 0.7
 
 write.csv(dataset,file = "./output/LR_BO_CHD.csv",row.names = FALSE)
 dataset <- read.csv("./output/LR_BO_CHD.csv",header = TRUE)
