@@ -1,0 +1,207 @@
+setwd("C:/Data/BujuBanton/msc/comp6115kdda/worksheets/Project1")
+getwd()
+rm(list = ls())
+#options(scipen = 99999)
+
+#install needed libraries
+#installus <- c("rpart","raprt.plot","pROC","caTools","keras")
+#install.packages(installus)
+
+library(rpart)
+library(rpart.plot)
+library(pROC)
+library(caTools)
+
+### Step 1 - Load data and get summaries 
+#dataset <- read.csv("framingham.csv",na.strings = c(""," "),stringsAsFactors = T)
+dataset <- read.csv("framingham.csv")
+summary(dataset)
+str(dataset)
+
+#how many missing value in each ro/column
+apply(dataset, 2,function(x) sum(is.na(x))) #number of NA per column
+
+## Replacing null values with the mean value
+#dataset[is.na(dataset$education),"education"] <- as.integer(mean(dataset$education,na.rm = T))
+#dataset[is.na(dataset$cigsPerDay),"cigsPerDay"] <- as.integer(mean(dataset$cigsPerDay, na.rm = T))
+#dataset[is.na(dataset$BPMeds),"BPMeds"] <- as.integer(mean(dataset$BPMeds,na.rm = T))
+#dataset[is.na(dataset$totChol),"totChol"] <- as.integer(mean(dataset$totChol,na.rm = T))
+#dataset[is.na(dataset$BMI),"BMI"] <- as.integer(mean(dataset$BMI,na.rm = T))
+#dataset[is.na(dataset$heartRate),"heartRate"] <- as.integer(mean(dataset$heartRate,na.rm = T))
+#dataset[is.na(dataset$glucose),"glucose"] <- as.integer(mean(dataset$glucose,na.rm = T))
+
+## Remove null values
+dataset <- dataset[!is.na(dataset$education),]
+dataset <- dataset[!is.na(dataset$cigsPerDay),]
+dataset <- dataset[!is.na(dataset$BPMeds),]
+dataset <- dataset[!is.na(dataset$totChol),]
+dataset <- dataset[!is.na(dataset$BMI),]
+dataset <- dataset[!is.na(dataset$heartRate),]
+dataset <- dataset[!is.na(dataset$glucose),]
+
+# Convert to factors
+#dataset$male <- as.factor(dataset$male)
+#dataset$currentSmoker <- as.factor(dataset$currentSmoker)
+#dataset$BPMeds <- as.factor(dataset$BPMeds)
+#dataset$prevalentStroke <- as.factor(dataset$prevalentStroke)
+#dataset$prevalentHyp <- as.factor(dataset$prevalentHyp)
+#dataset$diabetes <- as.factor(dataset$diabetes)
+
+# target variable dependent variable to factor
+dataset$TenYearCHD <- as.factor(dataset$TenYearCHD)
+
+## Rechecking for null values
+apply(dataset, 2,function(x) sum(is.na(x))) #number of NA per column
+
+#min max normalization : newMin 1 newMax 10
+#age_minval <- min(dataset$age,na.rm = T)
+#age_maxval <- max(dataset$age,na.rm = T)
+#cigsPerDay_minval <- min(dataset$cigsPerDay,na.rm = T)
+#cigsPerDay_maxval <- max(dataset$cigsPerDay,na.rm = T)
+#totChol_minval <- min(dataset$totChol,na.rm = T)
+#totChol_maxval <- max(dataset$totChol,na.rm = T)
+#sysBP_minval <- min(dataset$sysBP,na.rm = T)
+#sysBP_maxval <- max(dataset$sysBP,na.rm = T)
+#diaBP_minval <- min(dataset$diaBP,na.rm = T)
+#diaBP_maxval <- max(dataset$diaBP,na.rm = T)
+#BMI_minval <- min(dataset$BMI,na.rm = T)
+#BMI_maxval <- max(dataset$BMI,na.rm = T)
+#heartRate_minval <- min(dataset$heartRate,na.rm = T)
+#heartRate_maxval <- max(dataset$heartRate,na.rm = T)
+#glucose_minval <- min(dataset$glucose,na.rm = T)
+#glucose_maxval <- max(dataset$glucose,na.rm = T)
+#c(age_minval,age_maxval,cigsPerDay_minval,cigsPerDay_maxval, totChol_minval, totChol_maxval, sysBP_minval, sysBP_maxval, diaBP_minval, diaBP_maxval, heartRate_minval, heartRate_maxval, glucose_minval, glucose_maxval)
+
+#newMin = 1
+#newMax = 10
+#c(newMin, newMax)
+
+# formula ((value - minval) / (maxval - minval)) * (newMax-newMin)+1
+#dataset$age <- as.integer(((dataset[,"age"] - age_minval) / (age_maxval - age_minval)) * (newMax - newMin) + 1) 
+#dataset$cigsPerDay <- as.integer(((dataset[,"cigsPerDay"] - cigsPerDay_minval) / (cigsPerDay_maxval - cigsPerDay_minval)) * (newMax - newMin) + 1)
+#dataset$totChol <- as.integer(((dataset[,"totChol"] - totChol_minval) / (totChol_maxval - totChol_minval)) * (newMax - newMin) + 1)
+#dataset$sysBP <- as.integer(((dataset[,"sysBP"] - sysBP_minval) / (sysBP_maxval - sysBP_minval)) * (newMax - newMin) + 1) 
+#dataset$diaBP <- as.integer(((dataset[,"diaBP"] - diaBP_minval) / (diaBP_maxval - diaBP_minval)) * (newMax - newMin) + 1)
+#dataset$BMI <- as.integer(((dataset[,"BMI"] - BMI_minval) / (BMI_maxval - BMI_minval)) * (newMax - newMin) + 1) 
+#dataset$heartRate <- as.integer(((dataset[,"heartRate"] - heartRate_minval) / (heartRate_maxval - heartRate_minval)) * (newMax - newMin) + 1) 
+#dataset$glucose <- as.integer(((dataset[,"glucose"] - glucose_minval) / (glucose_maxval - glucose_minval)) * (newMax - newMin) + 1)
+
+write.csv(dataset,file = "whaterthenameis.csv",row.names = FALSE)
+dataset <- read.csv("whaterthenameis.csv",header = TRUE)
+
+dim(dataset)
+head(dataset, 10)
+
+#barplot(table(dataset$TenYearCHD), ylab ="Frequency", main = "Distribution of Target Class", col="lightblue")
+#hist(dataset$age)
+
+## CHD value counts
+table(dataset$TenYearCHD)
+
+### Step 2 - Split data into training and testing data 
+set.seed(1)
+DTDataset <-sample.split(Y=dataset$TenYearCHD, SplitRatio = 0.7)
+DTtrainData <- dataset[DTDataset,]
+dim(DTtrainData)
+DTtestData <- dataset[!DTDataset,]
+dim(DTtestData)
+
+### Step 3 - Fit a Decision Tree using training data
+# The . specifies all other columns ( Class ~ . )
+#DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
+DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
+#Target Variable = TenYearCHD, Input Variables = All, split =gini or information gain
+#control = rpart.control for prepruning DT minsplit- min records at node for split to occur, maxdepth - depth of the DT
+
+# Fitting the model
+rpart.plot(DTmodel, type=3, extra = 101, fallen.leaves = F, cex = 0.8) ##try extra with 2,8,4, 101
+
+summary(DTmodel) # detailed summary of splits
+DTmodel #prints the rules
+
+###Step 4 - Use the fitted model to do predictions for the test data
+
+DTpredTest <- predict(DTmodel, DTtestData, type="class")
+DTprobTest <- predict(DTmodel, DTtestData, type="prob")
+
+DTactualTest <- DTtestData$TenYearCHD
+
+### Step 5 - Create Confusion Matrix and compute the misclassification error
+DTt <- table(predictions= DTpredTest, actual = DTactualTest)
+DTt # Confusion matrix
+DTaccuracy <- sum(diag(DTt))/sum(DTt)
+DTaccuracy 
+
+## Visualization of probabilities
+hist(DTprobTest[,2], breaks = 100)
+
+### ROC and Area Under the Curve
+DTROC <- roc(DTactualTest, DTprobTest[,2])
+plot(DTROC, col="blue")
+DTAUC <- auc(DTROC)
+DTAUC
+
+#A new dataframe with Predicted Prob, Actual Value and Predicted Value
+DTpredicted_data <- data.frame(Probs = DTprobTest, Actual_Value= DTactualTest ,Predicted_Value = DTpredTest )  #Create data frame with prob and predictions
+#predicted_data$Probs.0 <- Class 0 Probability
+#predicted_data$Probs.1 <-  Class 1 Probability
+DTpredicted_data <- DTpredicted_data[order(DTpredicted_data$Probs.1, decreasing=TRUE),] # Sort on Probabilities
+DTpredicted_data$Rank <- 1:nrow(DTpredicted_data) # Add a new variable rank
+
+
+library(ggplot2)
+
+ggplot(data=DTpredicted_data, aes(x=Rank, y=Probs.1)) + 
+  geom_point(aes(color = DTpredicted_data$Actual_Value)) + xlab("Index") + ylab("Predicted Probability of getting Cardiovascular Diseases")
+
+### Step 6 - Use model to make predictions on newdata. Note we can specify the newData as data.frame with one or many records
+DTnewData <- data.frame(male = 1, age = 47, education = 1.97895, currentSmoker = 1, cigsPerDay = 9.003089, BPMeds = 0.02962963, prevalentStroke = 0, prevalentHyp = 0, diabetes = 0, totChol = 236.7216, sysBP = 102.0, diaBP = 68.0, BMI = 25.80201, heartRate = 75.87892, glucose = 81.96675 )
+
+DTpredProbability <-predict(DTmodel, DTnewData, type='prob')
+DTpredProbability
+
+## Performnce measures - 
+#setseed(1), gini
+# Simplicity = 15 leaves
+# Accuracy = 0.8363493
+# AUC = 0.6621
+
+#setseed(1), information
+# Simplicity = 10 leaves
+# Accuracy = 0.8363493
+# AUC = 0.6621
+
+### Step 7 - EXAMINING STABILITY - Creating Decile Plots for Class 1 or 0 Sort 
+
+#-----Create empty df-------
+DTdecile<- data.frame(matrix(ncol=4,nrow = 0))
+colnames(DTdecile)<- c("Decile","per_correct_preds","No_correct_Preds","cum_preds")
+#-----Initialize variables
+DTnum_of_deciles = 10
+DTObs_per_decile <- nrow(DTpredicted_data)/DTnum_of_deciles
+DTdecile_count = 1
+DTstart = 1
+DTstop = (DTstart-1) + DTObs_per_decile
+DTprev_cum_pred <- 0
+DTx = 0
+
+#-----Loop through DF and create deciles
+while (DTx < nrow(DTpredicted_data)) {
+  DTsubset <- DTpredicted_data[c(DTstart:DTstop),]
+  DTcorrect_count <- ifelse(DTsubset$Actual_Value == DTsubset$Predicted_Value, 1, 0)
+  DTno_correct_Preds <- sum(DTcorrect_count, na.rm = TRUE)
+  DTper_correct_Preds <- (DTno_correct_Preds / DTObs_per_decile) * 100
+  DTcum_preds <- DTno_correct_Preds+DTprev_cum_pred
+  DTaddRow <- data.frame("Decile" = DTdecile_count, "per_correct_preds" = DTper_correct_Preds, "No_correct_Preds" = DTno_correct_Preds, "cum_preds" = DTcum_preds)
+  DTdecile <- rbind(DTdecile,DTaddRow)
+  DTprev_cum_pred <- DTprev_cum_pred+DTno_correct_Preds
+  DTstart <- DTstop + 1
+  DTstop = (DTstart - 1) + DTObs_per_decile
+  DTx <- DTx+DTObs_per_decile
+  DTdecile_count <- DTdecile_count + 1
+}
+#------Stability plot (correct preds per decile)
+plot(DTdecile$Decile,DTdecile$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main="Stability Plot for Class 1")
+
+
+
