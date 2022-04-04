@@ -69,7 +69,7 @@ dim(LRtestData)
 #Target Variable = TenYearCHD, Input Vaiables = All, family = binomial (binary target variable) - Logistic regression using logit 
 LRModel <- glm(TenYearCHD ~ ., data=LRtrainData, family=binomial(link="logit"))
 summary(LRModel)
-rpart.plot(DTmodel)
+
 
 # log likelihood
 logLik(LRModel)
