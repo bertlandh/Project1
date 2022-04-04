@@ -1,0 +1,1029 @@
+---
+title: "Assignment3"
+author: "Sherice Ross & Pamelita Bennett"
+date: "4/28/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Cleaning environment
+```{r cleaning_and_loading}
+rm(list = ls())
+```
+
+
+# Loading libraries
+
+```{r libraries warning= FALSE}
+library(rpart)
+library(rpart.plot)
+library(pROC)
+library(caTools)
+library(ROSE)
+library(tensorflow)
+#install_tensorflow()
+
+library(keras)
+#install_keras()
+
+```
+
+# Load in data
+
+```{r}
+insurance.df <- read.csv(file.choose(), stringsAsFactors = TRUE)#importing guideware_insurance.csv
+```
+
+
+
+
+# DATA PREPARATION
+
+## Exploration
+
+#### Checking the top 6 records
+```{r}
+head(insurance.df)
+```
+#### Checking the bottom 6 records
+```{r}
+tail(insurance.df)
+```
+
+
+```{r dimension}
+dim(insurance.df) #checking the dimensions
+
+```
+
+```{r summary}
+summary(insurance.df)
+
+
+```
+
+```{r structure}
+str(insurance.df)
+```
+#### Checking for missing values
+
+```{r check for missing values}
+apply(insurance.df,2, function(k) sum(is.na(k)))
+```
+## Cleaning
+
+#### Removing ID - ID is unique and will not be used to do the classifications
+```{r}
+insurance.df$id <- NULL
+insurance.df$id #check to see if removal was successful
+```
+
+#### Column Exploration & Conversion
+
+##### Gender exploration
+```{r}
+str(insurance.df$Gender)
+unique(insurance.df$Gender)
+```
+##### Age exploration
+```{r}
+str(insurance.df$Age)
+unique(insurance.df$Age)
+
+summary(insurance.df$Age)
+```
+```{r}
+hist(insurance.df$Age)
+```
+
+##### Driving_License exploration
+```{r}
+str(insurance.df$Driving_License)
+unique(insurance.df$Driving_License)
+```
+
+##### Region_Code exploration
+```{r}
+str(insurance.df$Driving_License)
+unique(insurance.df$Driving_License)
+```
+
+##### Previously_Insured exploration
+```{r}
+str(insurance.df$Previously_Insured)
+unique(insurance.df$Previously_Insured)
+```
+
+##### Vehicle_Age exploration
+```{r}
+str(insurance.df$Vehicle_Age)
+unique(insurance.df$Vehicle_Age)
+```
+##### Vehicle_Damage exploration
+```{r}
+str(insurance.df$Vehicle_Damage)
+unique(insurance.df$Vehicle_Damage)
+```
+##### Annual_Premium exploration
+```{r}
+str(insurance.df$Annual_Premium)
+summary(insurance.df$Annual_Premium)
+```
+###### Annual_Premium outlier exploration 
+```{r}
+outlier_values <- boxplot.stats(insurance.df$Annual_Premium)$out  # outlier values.
+boxplot(insurance.df$Annual_Premium, main="Annual Premium", boxwex=0.1)
+```
+
+###### The results of the outlier exploration for annual premium shows that outliers do exist. However, based on consulation with the relevant parties, it was advised that due to the fact that the premium is determined by the risk it is normal for premiums to vary excessively.
+
+##### Policy_Sales_Channel exploration
+```{r}
+str(insurance.df$Policy_Sales_Channel)
+unique(insurance.df$Policy_Sales_Channel)
+```
+##### Vintage exploration
+```{r}
+str(insurance.df$Vintage)
+unique(insurance.df$Vintage)
+```
+
+##### Response exploration
+```{r}
+str(insurance.df$Response)
+summary(insurance.df$Response)
+```
+##### Converting to factors
+```{r creating a function to convert to factors}
+to.factors <- function(df, variables){
+  for (variable in variables){
+    df[[variable]] <- as.factor(df[[variable]])
+  }
+  return(df)
+}
+```
+
+```{r List of columns to be converted}
+categorical.vars <- c('Driving_License', 'Region_Code', 'Previously_Insured', 'Policy_Sales_Channel','Response')
+```
+
+```{r}
+insurance.df <- to.factors(df =insurance.df, variables = categorical.vars)
+str(insurance.df) # verify conversion
+```
+
+
+
+## Distribution of Responses (Target Variable)
+```{r}
+table(insurance.df$Response)
+prop.table(table(insurance.df$Response))*100
+```
+```{r}
+barplot(table(insurance.df$Response), ylab ="Frequency", main = "Distribution of Target Response", col="lightblue")
+```
+
+
+The distribution of the response values is imbalanced so it will affect the output of our models. In order to lessen this impact, the proportion of the responses will be adjusted during splitting.
+
+
+
+
+
+## Splitting into Train and Test datasets
+```{r split_data}
+set.seed(1)
+insurance.split <-sample.split(Y=insurance.df$Response, SplitRatio = 0.7)
+trainData <- insurance.df[insurance.split,]
+testData <- insurance.df[!insurance.split,]
+dim(trainData)
+dim(testData)
+table(trainData$Response)
+```
+
+
+#### Adjusting Imbalances for Training Data
+
+
+##### Over Sampling
+```{r over_sampling}
+#Calculating N
+zero_count <-table(trainData$Response)[1]
+one_count <-table(trainData$Response)[2]
+n <- zero_count+ one_count +(zero_count- one_count)
+n
+
+data_balanced_over <- ovun.sample(Response ~ ., data = trainData, method = "over",N = n)$data
+table(data_balanced_over$Response)
+```
+
+##### Under Sampling
+```{r}
+#Calculating N
+n <- one_count * 2
+n
+
+data_balanced_under <- ovun.sample(Response ~ ., data = trainData, method = "under", N = n, seed = 1)$data
+table(data_balanced_under$Response)
+```
+
+##### Equally Likely
+```{r}
+#Calculating N
+n <- one_count + zero_count
+n
+
+data_balanced_both <- ovun.sample(Response ~ ., data =trainData, method = "both", p=0.5,N=n, seed = 1)$data
+table(data_balanced_both$Response)
+```
+
+
+##### Balanced
+```{r}
+#Calculating N
+data_balanced_balance <- ROSE(Response ~ ., data = trainData, seed = 1)$data
+table(data_balanced_balance$Response)
+```
+
+ 
+ 
+ 
+
+
+
+
+
+
+# CLASSIFICATION MODELS
+
+## Model 1 (using Over Sampling)
+This model will be created using the 'data_balanced_over' data set
+
+### Creating Model 1 - Using decision Tree - Gini Method 
+
+```{r}
+DTmodelO <- rpart(Response ~ .,method="class", data=data_balanced_over, parms = list (split ="gini"))  
+DTmodelO
+```
+
+```{r}
+# Fitting the model
+
+rpart.plot(DTmodelO, type=3, extra = 4, fallen.leaves = F, cex = 0.8) 
+```
+
+### Applying the model to the test data
+
+```{r}
+predTest <- predict(DTmodelO, testData, type="class")
+probTest <- predict(DTmodelO, testData, type="prob")
+
+actualTest <- testData$Response
+```
+
+
+##### Create Confusion Matrix and compute the misclassification error
+
+```{r}
+t <- table(predictions=predTest, actual = actualTest)
+t # Confusion matrix
+accuracy <- sum(diag(t))/sum(t)
+accuracy 
+```
+
+##### Visualization of probabilities for Class 1 (Frequency of probablities)
+
+```{r}
+hist(probTest[,2], breaks = 10)
+```
+
+##### ROC and Area Under the Curve
+
+```{r}
+ROC <- roc(actualTest, probTest[,2])
+plot(ROC, col="blue")
+```
+```{r}
+AUC <- auc(ROC)
+AUC
+```
+
+
+### Analysing the performance of Model 1
+
+```{r}
+predicted_data <- data.frame(Probs = probTest, Actual_Value= actualTest ,Predicted_Value = predTest )
+```
+```{r}
+head(predicted_data)
+```
+
+```{r}
+tail(predicted_data)
+```
+
+```{r}
+predicted_data_sorted_by_prob_0 <- predicted_data[order(predicted_data$Probs.0, decreasing=TRUE),] # Sort on Probabilities
+predicted_data_sorted_by_prob_0$Rank <- 1:nrow(predicted_data) # Add a new variable rank
+head(predicted_data_sorted_by_prob_0)
+```
+```{r}
+tail(predicted_data_sorted_by_prob_0)
+```
+
+
+
+#### EXAMINING STABILITY - Creating Decile Plots for Response = 0 Sorted 
+
+##### Create empty decile df
+```{r}
+decileDF<- data.frame(matrix(ncol=4,nrow = 0))
+colnames(decileDF)<- c("Decile","per_correct_preds","No_correct_Preds","cum_preds")
+```
+
+##### Initialize variables
+```{r}
+num_of_deciles=10
+Obs_per_decile<-nrow(predicted_data_sorted_by_prob_0)/num_of_deciles
+decile_count=1
+start=1
+stop=(start-1) + Obs_per_decile
+prev_cum_pred<-0
+x=0
+```
+
+##### Looping through decile fF and create deciles
+```{r}
+while (x < nrow(predicted_data_sorted_by_prob_0)) {
+  subset<-predicted_data_sorted_by_prob_0[c(start:stop),]
+  correct_count<- ifelse(subset$Actual_Value==subset$Predicted_Value,1,0)
+  no_correct_Preds<-sum(correct_count,na.rm = TRUE)
+  per_correct_Preds<-(no_correct_Preds/Obs_per_decile)*100
+  cum_preds<-no_correct_Preds+prev_cum_pred
+  addRow<-data.frame("Decile"=decile_count,"per_correct_preds"=per_correct_Preds,"No_correct_Preds"=no_correct_Preds,"cum_preds"=cum_preds)
+  decileDF<-rbind(decileDF,addRow)
+  prev_cum_pred<-prev_cum_pred+no_correct_Preds
+  start<-stop+1
+  stop=(start-1) + Obs_per_decile
+  x<-x+Obs_per_decile
+  decile_count<-decile_count+1
+}
+```
+
+##### Stability plot  (Percentage of correct predications per decile)
+```{r}
+plot(decileDF$Decile,decileDF$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main=" Model 1 - Stability Plot for Class 0")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Model 2 (using Under Sampling)
+This model will be created using the 'data_balanced_under' data set
+
+### Creating Model 2 - Using decision Tree - Gini Method
+
+```{r}
+
+DTmodelU <- rpart(Response ~ .,method="class", data=data_balanced_under, parms = list (split ="gini"))  
+DTmodelU
+   
+```
+
+```{r}
+# Fitting the model
+
+rpart.plot(DTmodelU, type=3, extra = 4, fallen.leaves = F, cex = 0.8) ##try extra with 2,8,4, 101
+```
+
+### Applying the model to the test data
+
+```{r}
+predTest <- predict(DTmodelU, testData, type="class")
+probTest <- predict(DTmodelU, testData, type="prob")
+
+actualTest <- testData$Response
+```
+
+
+##### Create Confusion Matrix and compute the misclassification error
+
+```{r}
+t <- table(predictions=predTest, actual = actualTest)
+t # Confusion matrix
+accuracy <- sum(diag(t))/sum(t)
+accuracy 
+```
+##### Visualization of probabilities for Class 1 (Frequency of probablities)
+
+```{r}
+hist(probTest[,2], breaks = 10)
+```
+
+##### ROC and Area Under the Curve
+
+```{r}
+ROC <- roc(actualTest, probTest[,2])
+plot(ROC, col="blue")
+
+```
+```{r}
+AUC <- auc(ROC)
+AUC
+```
+
+
+### Analysing Performance of Model 2
+
+```{r}
+predicted_data <- data.frame(Probs = probTest, Actual_Value= actualTest ,Predicted_Value = predTest )
+```
+
+```{r}
+predicted_data_sorted_by_prob_0 <- predicted_data[order(predicted_data$Probs.0, decreasing=TRUE),] # Sort on Probabilities
+predicted_data_sorted_by_prob_0$Rank <- 1:nrow(predicted_data) # Add a new variable rank
+head(predicted_data_sorted_by_prob_0)
+```
+
+
+#### EXAMINING STABILITY - Creating Decile Plots for Class 0 Sorted 
+
+##### Creating Empty Docile Df
+```{r}
+decileDF<- data.frame(matrix(ncol=4,nrow = 0))
+colnames(decileDF)<- c("Decile","per_correct_preds","No_correct_Preds","cum_preds")
+```
+
+##### Initialize variables
+```{r}
+num_of_deciles=10
+Obs_per_decile<-nrow(predicted_data_sorted_by_prob_0)/num_of_deciles
+decile_count=1
+start=1
+stop=(start-1) + Obs_per_decile
+prev_cum_pred<-0
+x=0
+```
+
+##### Loop through DF and create deciles
+```{r}
+while (x < nrow(predicted_data_sorted_by_prob_0)) {
+  subset<-predicted_data_sorted_by_prob_0[c(start:stop),]
+  correct_count<- ifelse(subset$Actual_Value==subset$Predicted_Value,1,0)
+  no_correct_Preds<-sum(correct_count,na.rm = TRUE)
+  per_correct_Preds<-(no_correct_Preds/Obs_per_decile)*100
+  cum_preds<-no_correct_Preds+prev_cum_pred
+  addRow<-data.frame("Decile"=decile_count,"per_correct_preds"=per_correct_Preds,"No_correct_Preds"=no_correct_Preds,"cum_preds"=cum_preds)
+  decileDF<-rbind(decileDF,addRow)
+  prev_cum_pred<-prev_cum_pred+no_correct_Preds
+  start<-stop+1
+  stop=(start-1) + Obs_per_decile
+  x<-x+Obs_per_decile
+  decile_count<-decile_count+1
+}
+```
+
+##### Stability plot (correct predictions per decile for class 0)
+```{r}
+plot(decileDF$Decile,decileDF$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main=" Model 2 - Stability Plot for Class 0")
+```
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Model 3 (using Equally Likey)
+This model will be created using the 'data_balanced_both' data set
+
+### Creating Model 3 - Using decision Tree - Gini Method 
+```{r}
+DTmodelE <- rpart(Response ~ .,method="class", data=data_balanced_both, parms = list (split ="gini"))  
+DTmodelE
+
+```
+
+```{r}
+# Fitting the model
+
+rpart.plot(DTmodelE, type=3, extra = 4, fallen.leaves = F, cex = 0.8) 
+```
+### Applying the model to the test data
+
+```{r}
+predTest <- predict(DTmodelE, testData, type="class")
+probTest <- predict(DTmodelE, testData, type="prob")
+
+actualTest <- testData$Response
+```
+
+
+##### Create Confusion Matrix and compute the misclassification error
+
+```{r}
+t <- table(predictions=predTest, actual = actualTest)
+t # Confusion matrix
+accuracy <- sum(diag(t))/sum(t)
+accuracy 
+```
+##### Visualization of probabilities for class 1 (Frequency distribution)
+
+```{r}
+hist(probTest[,2], breaks = 10)
+```
+
+##### ROC and Area Under the Curve
+
+```{r}
+ROC <- roc(actualTest, probTest[,2])
+plot(ROC, col="blue")
+```
+```{r}
+AUC <- auc(ROC)
+AUC
+```
+
+
+### Analysing the performance of Model 3
+
+```{r}
+predicted_data <- data.frame(Probs = probTest, Actual_Value= actualTest ,Predicted_Value = predTest )
+```
+
+```{r}
+predicted_data_sorted_by_prob_0 <- predicted_data[order(predicted_data$Probs.0, decreasing=TRUE),] # Sort on Probabilities
+predicted_data_sorted_by_prob_0$Rank <- 1:nrow(predicted_data) # Add a new variable rank
+
+```
+
+
+#### EXAMINING STABILITY - Creating Decile Plots for Class 0 Sorted 
+
+##### Create Empty Decile DF
+```{r}
+decileDF<- data.frame(matrix(ncol=4,nrow = 0))
+colnames(decileDF)<- c("Decile","per_correct_preds","No_correct_Preds","cum_preds")
+```
+
+##### Initialize varables
+```{r}
+num_of_deciles=10
+Obs_per_decile<-nrow(predicted_data_sorted_by_prob_0)/num_of_deciles
+decile_count=1
+start=1
+stop=(start-1) + Obs_per_decile
+prev_cum_pred<-0
+x=0
+```
+
+##### Loop through DF and create deciles
+```{r}
+while (x < nrow(predicted_data_sorted_by_prob_0)) {
+  subset<-predicted_data_sorted_by_prob_0[c(start:stop),]
+  correct_count<- ifelse(subset$Actual_Value==subset$Predicted_Value,1,0)
+  no_correct_Preds<-sum(correct_count,na.rm = TRUE)
+  per_correct_Preds<-(no_correct_Preds/Obs_per_decile)*100
+  cum_preds<-no_correct_Preds+prev_cum_pred
+  addRow<-data.frame("Decile"=decile_count,"per_correct_preds"=per_correct_Preds,"No_correct_Preds"=no_correct_Preds,"cum_preds"=cum_preds)
+  decileDF<-rbind(decileDF,addRow)
+  prev_cum_pred<-prev_cum_pred+no_correct_Preds
+  start<-stop+1
+  stop=(start-1) + Obs_per_decile
+  x<-x+Obs_per_decile
+  decile_count<-decile_count+1
+}
+```
+
+##### Stability plot (correct predictions per decile for class 0)
+```{r}
+plot(decileDF$Decile,decileDF$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main="Model 3 - Stability Plot for Class 0")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Model 4 (using Balanced)
+This model will be created using the 'data_balanced_balance' data set
+
+### Creating Model 4 - Using decision Tree - Gini Method
+
+```{r}
+
+DTmodelB <- rpart(Response ~ .,method="class", data=data_balanced_balance, parms = list (split ="gini"))  
+DTmodelB
+
+```
+
+```{r}
+# Fitting the model
+rpart.plot(DTmodelB, type=5, extra = 4, fallen.leaves = F, cex = 0.8) 
+```
+
+### Applying the model to the test data
+
+```{r}
+predTest <- predict(DTmodelB, testData, type="class")
+probTest <- predict(DTmodelB, testData, type="prob")
+
+actualTest <- testData$Response
+```
+
+
+##### Create Confusion Matrix and compute the misclassification error
+
+```{r}
+t <- table(predictions=predTest, actual = actualTest)
+t # Confusion matrix
+accuracy <- sum(diag(t))/sum(t)
+accuracy 
+```
+##### Visualization of probabilities for class 1 (Frequency distribution)
+
+```{r}
+hist(probTest[,2], breaks = 10)
+```
+
+##### ROC and Area Under the Curve
+
+```{r}
+ROC <- roc(actualTest, probTest[,2])
+plot(ROC, col="blue")
+AUC <- auc(ROC)
+AUC
+```
+
+### Analysing the performance of Model 4
+
+```{r}
+predicted_data <- data.frame(Probs = probTest, Actual_Value= actualTest ,Predicted_Value = predTest )
+```
+
+```{r}
+predicted_data_sorted_by_prob_0 <- predicted_data[order(predicted_data$Probs.0, decreasing=TRUE),] # Sort on Probabilities
+predicted_data_sorted_by_prob_0$Rank <- 1:nrow(predicted_data) # Add a new variable rank
+head(predicted_data_sorted_by_prob_0)
+```
+
+#### EXAMINING STABILITY - Creating Decile Plots for Class 0 Sorted
+
+##### Creating empty docile df
+```{r}
+decileDF<- data.frame(matrix(ncol=4,nrow = 0))
+colnames(decileDF)<- c("Decile","per_correct_preds","No_correct_Preds","cum_preds")
+```
+
+
+
+##### Initialize variables
+```{r}
+num_of_deciles=10
+Obs_per_decile<-nrow(predicted_data_sorted_by_prob_0)/num_of_deciles
+decile_count=1
+start=1
+stop=(start-1) + Obs_per_decile
+prev_cum_pred<-0
+x=0
+```
+
+##### Loop through DF and create deciles
+```{r}
+while (x < nrow(predicted_data_sorted_by_prob_0)) {
+  subset<-predicted_data_sorted_by_prob_0[c(start:stop),]
+  correct_count<- ifelse(subset$Actual_Value==subset$Predicted_Value,1,0)
+  no_correct_Preds<-sum(correct_count,na.rm = TRUE)
+  per_correct_Preds<-(no_correct_Preds/Obs_per_decile)*100
+  cum_preds<-no_correct_Preds+prev_cum_pred
+  addRow<-data.frame("Decile"=decile_count,"per_correct_preds"=per_correct_Preds,"No_correct_Preds"=no_correct_Preds,"cum_preds"=cum_preds)
+  decileDF<-rbind(decileDF,addRow)
+  prev_cum_pred<-prev_cum_pred+no_correct_Preds
+  start<-stop+1
+  stop=(start-1) + Obs_per_decile
+  x<-x+Obs_per_decile
+  decile_count<-decile_count+1
+}
+```
+
+##### Stability plot (correct predictions for class 0 per decile)
+```{r}
+plot(decileDF$Decile,decileDF$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main="Model 4- Stability Plot for Class 0")
+```
+
+
+
+
+
+
+## Model 5( Neural Networks)
+This model will be created using the trainData set
+### Converting variables to numeric
+
+```{r}
+
+levels(trainData$Gender)[1] <- 0 # Assigning female to the numeric value 0
+levels(trainData$Gender)[2] <- 1 # # Assigning male to the numeric value 1
+
+levels(trainData$Vehicle_Age)[1] <- 0 # Assigning <1 Year to the numeric value 0
+levels(trainData$Vehicle_Age)[2] <- 2 # Assigning >2 Year to the numeric value 2
+levels(trainData$Vehicle_Age)[3] <- 1 # Assigning 1-2 Years to the numeric value 1
+
+levels(trainData$Vehicle_Damage)[1]<- 0 # Assigning No to 0
+levels(trainData$Vehicle_Damage)[2]<- 1 # Assigning Yes to 1
+
+str(trainData)
+```
+
+```{r creating a function to convert to numeric}
+to.numeric <- function(df, variables){
+  for (variable in variables){
+    df[[variable]] <- as.numeric(as.character(df[[variable]]))
+  }
+  return(df)
+}
+```
+
+```{r}
+vars <- c('Gender','Driving_License', 'Region_Code', 'Previously_Insured','Vehicle_Age','Vehicle_Damage', 'Policy_Sales_Channel','Response')
+```
+
+```{r}
+trainData <- to.numeric(df =trainData, variables = vars)
+str(trainData)
+```
+
+
+
+```{r}
+levels(testData$Gender)[1] <- 0 # Assigning female to the numeric value 0
+levels(testData$Gender)[2] <- 1 # # Assigning male to the numeric value 1
+
+levels(testData$Vehicle_Age)[1] <- 0 # Assigning <1 Year to the numeric value 0
+levels(testData$Vehicle_Age)[2] <- 2 # Assigning >2 Year to the numeric value 2
+levels(testData$Vehicle_Age)[3] <- 1 # Assigning 1-2 Years to the numeric value 1
+
+levels(testData$Vehicle_Damage)[1]<- 0 # Assigning No to 0
+levels(testData$Vehicle_Damage)[2]<- 1 # Assigning Yes to 1
+
+str(testData$Vehicle_Damage)
+```
+
+```{r}
+testData <- to.numeric(df =testData, variables = vars)
+str(trainData)
+```
+
+```{r}
+trainX <- trainData[, 1:10] #input variables
+summary(trainX)
+```
+```{r}
+trainY <- as.data.frame(trainData$Response) #Last column of TrainData
+colnames(trainY) <- c("Class") #Modify variable name to Class
+
+```
+
+```{r}
+testX <- testData[, 1:10] ## testX contains input variables in testData
+summary(testX)
+```
+
+```{r}
+testY <- as.data.frame(testData$Response)  #testY contains last column of testData
+colnames(testY) <- c("Class") #Modify variable name to Class
+
+```
+
+
+Change training (X & Y) data into correct format to build model - convert X and Y to vectors and matrices
+```{r}
+newTrainY <- as.vector(trainY)
+newTrainY <- as.matrix(newTrainY)
+```
+
+
+```{r}
+newTrainX <- cbind(as.vector(trainX$Gender),as.vector(trainX$Age), as.vector(trainX$Driving_License),
+                   as.vector(trainX$Region_Code), as.vector(trainX$Previously_Insured),  as.vector(trainX$Vehicle_Age), as.vector(trainX$Vehicle_Damage),  as.vector(trainX$Annual_Premium),as.vector(trainX$Policy_Sales_Channel),as.vector(trainX$Vintage))
+```
+
+
+```{r}
+newTrainX  <- normalize(newTrainX) #Normalize data
+summary(newTrainX)
+```
+
+Change test (X & Y) data into correct format to build model - convert X and Y to vectors and matrices
+
+```{r}
+newTestY <- as.vector(testY)
+newTestY <- as.matrix(newTestY)
+```
+
+```{r}
+newtestX <- cbind(as.vector(testX$Gender),as.vector(testX$Age), as.vector(testX$Driving_License),
+                   as.vector(testX$Region_Code), as.vector(testX$Previously_Insured),  as.vector(testX$Vehicle_Age), as.vector(testX$Vehicle_Damage),  as.vector(testX$Annual_Premium),as.vector(testX$Policy_Sales_Channel),as.vector(testX$Vintage))
+```
+
+```{r}
+newtestX  <- normalize(newtestX)  #Normailze data
+summary(newtestX)
+```
+
+
+### Using Keras - create, compile, Fit a model using training data
+
+```{r warning=FALSE}
+model <- keras_model_sequential()
+
+```
+
+```{r}
+model %>% 
+  layer_dense(units = 14, input_shape = c(10)) %>% 
+  layer_activation("relu") %>% 
+  layer_dense(units = 10) %>% 
+  layer_activation("relu") %>%
+  layer_dense(units = 1) %>%
+  layer_activation("sigmoid") 
+
+summary(model)
+```
+
+```{r Compiling the Model}
+model %>% compile(
+  optimizer = optimizer_adam(),
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+```
+
+```{r Fitting the Model}
+zero_count <-table(trainData$Response)[1]
+one_count <-table(trainData$Response)[2]
+total <- zero_count + one_count
+
+weight_for_0 = (1 / zero_count) * (total / 2.0)
+weight_for_1 = (1 / one_count) * (total / 2.0)
+
+weight_for_0
+weight_for_1
+
+nnModel <- model %>% fit(
+  newTrainX, newTrainY, 
+  epochs =100, batch_size = 100,
+  class_weight = list("0"=weight_for_0,"1"=weight_for_1)
+)
+```
+
+
+
+### Applying the model to the test data
+```{r visual_model5}
+plot(nnModel)
+```
+```{r}
+model %>% evaluate(newtestX, newTestY)
+
+probTest <- model %>% predict(newtestX)
+```
+```{r}
+predVal <- ifelse(probTest >= 0.5, 1, 0)
+predTest <- factor(predVal, levels = c(0,1))
+predTest[0:6]
+```
+
+```{r}
+actualTest <-testY$Class
+```
+
+### Analyse the performance of the model
+```{r}
+# Create Confusion Matrix and compute the misclassification error
+
+## Evaluate model
+model %>% evaluate(newtestX, newTestY)
+```
+```{r}
+##Confusion Matrix
+probTest <- model %>% predict(newtestX)
+t <- table(predictions=predTest, actual = actualTest)
+t 
+accuracy <- sum(diag(t))/sum(t)
+accuracy
+```
+```{r}
+### ROC and Area Under the Curve
+ROC <- roc(actualTest, probTest)
+plot(ROC, col="blue")
+AUC <- auc(ROC)
+```
+```{r}
+AUC
+```
+```{r}
+#A new dataframe with Predicted Prob, Actual Value and Predicted Value
+predicted_data_sorted_by_prob_0 <- data.frame(Probs = probTest, Actual_Value=actualTest,Predicted_Value = predTest )  #Create data frame with prob and predictions
+predicted_data_sorted_by_prob_0 <- predicted_data[order(predicted_data$Probs.0, decreasing=TRUE),] # Sort on Probabilities
+predicted_data$Rank <- 1:nrow(predicted_data) # Add a new variable rank
+
+```
+
+
+#### EXAMINING STABILITY - Creating Decile Plots for Class 0 Sorted 
+
+##### Create empty decile df
+```{r}
+decileDF<- data.frame(matrix(ncol=4,nrow = 0))
+colnames(decileDF)<- c("Decile","per_correct_preds","No_correct_Preds","cum_preds")
+```
+
+##### Initialize variables
+```{r}
+num_of_deciles=10
+Obs_per_decile<-nrow(predicted_data_sorted_by_prob_0)/num_of_deciles
+decile_count=1
+start=1
+stop=(start-1) + Obs_per_decile
+prev_cum_pred<-0
+x=0
+```
+
+##### Loop through DF and create deciles
+```{r}
+while (x < nrow(predicted_data_sorted_by_prob_0)) {
+  subset<-predicted_data_sorted_by_prob_0[c(start:stop),]
+  correct_count<- ifelse(subset$Actual_Value==subset$Predicted_Value,1,0)
+  no_correct_Preds<-sum(correct_count,na.rm = TRUE)
+  per_correct_Preds<-(no_correct_Preds/Obs_per_decile)*100
+  cum_preds<-no_correct_Preds+prev_cum_pred
+  addRow<-data.frame("Decile"=decile_count,"per_correct_preds"=per_correct_Preds,"No_correct_Preds"=no_correct_Preds,"cum_preds"=cum_preds)
+  decileDF<-rbind(decileDF,addRow)
+  prev_cum_pred<-prev_cum_pred+no_correct_Preds
+  start<-stop+1
+  stop=(start-1) + Obs_per_decile
+  x<-x+Obs_per_decile
+  decile_count<-decile_count+1
+}
+```
+
+##### Stability plot (correct predictions per decile for class 0)
+```{r}
+plot(decileDF$Decile,decileDF$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main="Model 5 - Stability Plot for Class 0")
+```
+
+
+
+
+
+
+
