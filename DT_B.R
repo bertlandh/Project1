@@ -6,7 +6,7 @@ rm(list = ls())
 #options(scipen = 99999)
 
 #install needed libraries
-#installus <- c("rpart","raprt.plot","pROC","caTools","keras","readr","dplyr","party","partykit")
+#installus <- c("rpart","raprt.plot","pROC","caTools","keras","readr","dplyr","party","partykit","tidyverse","ggplot2","ggthemes","caret","elasticnet","knitr","matrixStats")
 #install.packages(installus)
 
 #loading libraries
@@ -160,6 +160,7 @@ dataset %>% select(-Heating_Load,-Cooling_Load) %>% summarise_if(is.numeric,sd)
 
 ### Step 2 - Split data into training and testing data 
 set.seed(1)
+
 DTHLDataset <-sample.split(Y=dataset$Heating_Load, SplitRatio = 0.7)
 DTHLtrainData <- dataset[DTHLDataset,]
 dim(DTHLtrainData)
@@ -176,9 +177,9 @@ dim(DTCLtestData)
 
 ### Step 3 - Fit a Decision Tree using training data
 #DTmodel <- rpart(Heating_Load ~ .,method="class", data=DTtrainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
-
-#DTmodel <- rpart(Heating_Load ~ .,method="class", data=DTtrainData, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
 DTHLmodel <- rpart(Heating_Load ~ ., data=DTHLtrainData)
+
+#DTmodel <- rpart(Cooling_Load ~ .,method="class", data=DTtrainData, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
 DTCLmodel <- rpart(Cooling_Load ~ ., data=DTCLtrainData)
 
 # Fitting the model
