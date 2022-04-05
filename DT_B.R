@@ -3,7 +3,7 @@
 setwd("//jr1/c$/Data/BujuBanton/msc/comp6115kdda/worksheets/Project1/")
 getwd()
 rm(list = ls())
-options(scipen = 99999)
+#options(scipen = 99999)
 
 #install needed libraries
 #installus <- c("rpart","raprt.plot","pROC","caTools","keras","readr","dplyr","party","partykit")
@@ -47,6 +47,25 @@ colnames(dataset) <- c('Relative_Compactness',
                       'Heating_Load',
                       'Cooling_Load')
 
+
+#variable to factor
+#dataset$Relative_Compactness <- as.factor(dataset$Relative_Compactness)
+#dataset$Surface_Area <- as.factor(dataset$Surface_Area)
+#dataset$Wall_Area <- as.factor(dataset$Wall_Area)
+#dataset$Roof_Area <- as.factor(dataset$Roof_Area)
+#dataset$Overall_Height <- as.factor(dataset$Overall_Height)
+#dataset$Orientation <- as.factor(dataset$Orientation)
+#dataset$Glazing_Area <- as.factor(dataset$Glazing_Area)
+#dataset$Glazing_Area_Distribution <- as.factor(dataset$Glazing_Area_Distribution)
+#dataset$Heating_Load <- as.factor(dataset$Heating_Load)
+#dataset$Cooling_Load <- as.factor(dataset$Cooling_Load)
+
+
+# hist(dataset$Heating_Load)
+# hist(dataset$Cooling_Load)
+# hist(dataset$Wall_Area)
+# hist(dataset$Roof_Area)
+
 #cleaning NAs
 colSums(is.na(dataset))
 
@@ -69,132 +88,169 @@ dataset %>% select(-Heating_Load,-Cooling_Load) %>% summarise_if(is.numeric,sd)
 
 #Data Visualization
 
-#the density of heating load
-dataset %>% ggplot(aes(Heating_Load)) +
-  geom_density(aes(fill = "red", color = "red")) +
-  xlab("heating lab") +
-  ggtitle("Density of Heating Load") +
-  theme_economist() +
-  theme(legend.position = "none")
-
-#the density of Cooling load
-dataset %>% ggplot(aes(Cooling_Load)) +
-  geom_density(aes(fill = "blue", color = "blue")) +
-  xlab("cooling lab") +
-  ggtitle("Density of Cooling Load") +
-  theme_economist() +
-  theme(legend.position = "none")
-
-#Both heating and cooling density look similar. scatter plot of surface area and heating load
-dataset %>% ggplot(aes(Surface_Area,Heating_Load)) +
-  geom_point(aes(color = "red")) +
-  xlab("surface area") +
-  ylab("heating load")+
-  ggtitle("Surface area and heat") +
-  theme_economist() +
-  theme(legend.position = "none")
-
-#scatter plot of roof area and heating load
-dataset %>% ggplot(aes(Roof_Area,Heating_Load)) +
-  geom_point(aes(color = "red")) +
-  xlab("roof area") +
-  ylab("heating load")+
-  ggtitle("Roof area and heat") +
-  theme_economist() +
-  theme(legend.position = "none")
-
-#scatter plot of compactness and heating load
-dataset %>% ggplot(aes(Relative_Compactness,Heating_Load)) +
-  geom_point(aes(color = "red")) +
-  xlab("relative compactness") +
-  ylab("heating load") +
-  ggtitle("Relative Compactness and Heating Load") +
-  theme_economist() +
-  theme(legend.position = "none")
-
-#scatter plot of surface area and cooling load
-dataset %>% ggplot(aes(Surface_Area,Cooling_Load)) +
-  geom_point(aes(color = "blue")) +
-  xlab("surface area") +
-  ylab("cooling load")+
-  ggtitle("Surface area and cooling") +
-  theme_economist() +
-  theme(legend.position = "none")
-
-#scatter plot of roof area and cooling load
-dataset %>% ggplot(aes(Roof_Area,Cooling_Load)) +
-  geom_point(aes(color = "blue")) +
-  xlab("roof area") +
-  ylab("cooling load")+
-  ggtitle("Roof area and cooling") +
-  theme_economist() +
-  theme(legend.position = "none")
-
-#scatter plot of compactness and cooling load
-dataset %>% ggplot(aes(Relative_Compactness,Cooling_Load)) +
-  geom_point(aes(color = "blue")) +
-  xlab("relative compactness") +
-  ylab("cooling load") +
-  ggtitle("Relative Compactness and Cooling Load") +
-  theme_economist() +
-  theme(legend.position = "none")
+# #the density of heating load
+# dataset %>% ggplot(aes(Heating_Load)) +
+#   geom_density(aes(fill = "red", color = "red")) +
+#   xlab("heating lab") +
+#   ggtitle("Density of Heating Load") +
+#   theme_economist() +
+#   theme(legend.position = "none")
+# 
+# #the density of Cooling load
+# dataset %>% ggplot(aes(Cooling_Load)) +
+#   geom_density(aes(fill = "blue", color = "blue")) +
+#   xlab("cooling lab") +
+#   ggtitle("Density of Cooling Load") +
+#   theme_economist() +
+#   theme(legend.position = "none")
+# 
+# #Both heating and cooling density look similar. scatter plot of surface area and heating load
+# dataset %>% ggplot(aes(Surface_Area,Heating_Load)) +
+#   geom_point(aes(color = "red")) +
+#   xlab("surface area") +
+#   ylab("heating load")+
+#   ggtitle("Surface area and heat") +
+#   theme_economist() +
+#   theme(legend.position = "none")
+# 
+# #scatter plot of roof area and heating load
+# dataset %>% ggplot(aes(Roof_Area,Heating_Load)) +
+#   geom_point(aes(color = "red")) +
+#   xlab("roof area") +
+#   ylab("heating load")+
+#   ggtitle("Roof area and heat") +
+#   theme_economist() +
+#   theme(legend.position = "none")
+# 
+# #scatter plot of compactness and heating load
+# dataset %>% ggplot(aes(Relative_Compactness,Heating_Load)) +
+#   geom_point(aes(color = "red")) +
+#   xlab("relative compactness") +
+#   ylab("heating load") +
+#   ggtitle("Relative Compactness and Heating Load") +
+#   theme_economist() +
+#   theme(legend.position = "none")
+# 
+# #scatter plot of surface area and cooling load
+# dataset %>% ggplot(aes(Surface_Area,Cooling_Load)) +
+#   geom_point(aes(color = "blue")) +
+#   xlab("surface area") +
+#   ylab("cooling load")+
+#   ggtitle("Surface area and cooling") +
+#   theme_economist() +
+#   theme(legend.position = "none")
+# 
+# #scatter plot of roof area and cooling load
+# dataset %>% ggplot(aes(Roof_Area,Cooling_Load)) +
+#   geom_point(aes(color = "blue")) +
+#   xlab("roof area") +
+#   ylab("cooling load")+
+#   ggtitle("Roof area and cooling") +
+#   theme_economist() +
+#   theme(legend.position = "none")
+# 
+# #scatter plot of compactness and cooling load
+# dataset %>% ggplot(aes(Relative_Compactness,Cooling_Load)) +
+#   geom_point(aes(color = "blue")) +
+#   xlab("relative compactness") +
+#   ylab("cooling load") +
+#   ggtitle("Relative Compactness and Cooling Load") +
+#   theme_economist() +
+#   theme(legend.position = "none")
 
 ### Step 2 - Split data into training and testing data 
 set.seed(1)
-DTDataset <-sample.split(Y=dataset$Heating_Load, SplitRatio = 0.7)
-DTtrainData <- dataset[DTDataset,]
-dim(DTtrainData)
-hist(DTtrainData$Heating_Load)
-DTtestData <- dataset[!DTDataset,]
-dim(DTtestData)
+DTHLDataset <-sample.split(Y=dataset$Heating_Load, SplitRatio = 0.7)
+DTHLtrainData <- dataset[DTHLDataset,]
+dim(DTHLtrainData)
+hist(DTHLtrainData$Heating_Load)
+DTHLtestData <- dataset[!DTHLDataset,]
+dim(DTHLtestData)
+
+DTCLDataset <-sample.split(Y=dataset$Cooling_Load, SplitRatio = 0.7)
+DTCLtrainData <- dataset[DTCLDataset,]
+dim(DTCLtrainData)
+hist(DTCLtrainData$Cooling_Load)
+DTCLtestData <- dataset[!DTCLDataset,]
+dim(DTCLtestData)
 
 ### Step 3 - Fit a Decision Tree using training data
 #DTmodel <- rpart(Heating_Load ~ .,method="class", data=DTtrainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
+
 #DTmodel <- rpart(Heating_Load ~ .,method="class", data=DTtrainData, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
-#DTmodel <- rpart(Heating_Load ~ .,method="class", data=DTtrainData)
-DTmodel <- rpart(Heating_Load ~ ., data=DTtrainData)  
+DTHLmodel <- rpart(Heating_Load ~ ., data=DTHLtrainData)
+DTCLmodel <- rpart(Cooling_Load ~ ., data=DTCLtrainData)
 
 # Fitting the model
-#rpart.plot(DTmodel, type=3, extra = 101, fallen.leaves = F, cex = 0.8) ##try extra with 2,8,4, 101
-rpart.plot(DTmodel,box.palette="blue")
+rpart.plot(DTHLmodel, type=3, extra = 101, fallen.leaves = F, cex = 0.8,box.palette="blue")
+rpart.plot(DTHLmodel,box.palette="blue")
 
-summary(DTmodel) # detailed summary of splits
-DTmodel #prints the rules
+summary(DTHLmodel) # detailed summary of splits
+DTHLmodel #prints the rules
+
+rpart.plot(DTCLmodel, type=3, extra = 101, fallen.leaves = F, cex = 0.8,box.palette="blue")
+rpart.plot(DTCLmodel,box.palette="blue")
+
+summary(DTCLmodel) # detailed summary of splits
+DTCLmodel #prints the rules
 
 ###Step 4 - Use the fitted model to do predictions for the test data
 
-DTpredTest <- predict(DTmodel, DTtestData, type="class")
-DTprobTest <- predict(DTmodel, DTtestData, type="prob")
+DTHLpredTest <- predict(DTHLmodel, DTHLtestData, type="class")
+DTHLprobTest <- predict(DTHLmodel, DTHLtestData, type="prob")
 
-DTactualTest <- DTtestData$Heating_Load
+DTHLactualTest <- DTHLtestData$Heating_Load
+
+DTCLpredTest <- predict(DTCLmodel, DTCLtestData, type="class")
+DTCLprobTest <- predict(DTCLmodel, DTCLtestData, type="prob")
+
+DTCLactualTest <- DTCLtestData$Cooling_Load
 
 ### Step 5 - Create Confusion Matrix and compute the misclassification error
-DTt <- table(predictions= DTpredTest, actual = DTactualTest)
-DTt # Confusion matrix
-DTaccuracy <- sum(diag(DTt))/sum(DTt)
-DTaccuracy 
+DTHLt <- table(predictions= DTHLpredTest, actual = DTHLactualTest)
+DTHLt # Confusion matrix
+DTHLaccuracy <- sum(diag(DTHLt))/sum(DTHLt)
+DTHLaccuracy 
+
+DTCLt <- table(predictions= DTCLpredTest, actual = DTCLactualTest)
+DTCLt # Confusion matrix
+DTCLaccuracy <- sum(diag(DTCLt))/sum(DTCLt)
+DTCLaccuracy 
 
 ## Visualization of probabilities
-hist(DTprobTest[,2], breaks = 100)
+hist(DTHLprobTest[,2], breaks = 100)
+
+hist(DTCLprobTest[,2], breaks = 100)
 
 ### ROC and Area Under the Curve
-DTROC <- roc(DTactualTest, DTprobTest[,2])
-plot(DTROC, col="blue")
-DTAUC <- auc(DTROC)
-DTAUC
+DTHLROC <- roc(DTHLactualTest, DTHLprobTest[,2])
+plot(DTHLROC, col="blue")
+DTHLAUC <- auc(DTHLROC)
+DTHLAUC
+
+DTCLROC <- roc(DTCLactualTest, DTCLprobTest[,2])
+plot(DTCLROC, col="blue")
+DTCLAUC <- auc(DTCLROC)
+DTCLAUC
 
 #A new dataframe with Predicted Prob, Actual Value and Predicted Value
-DTpredicted_data <- data.frame(Probs = DTprobTest, Actual_Value= DTactualTest ,Predicted_Value = DTpredTest )  #Create data frame with prob and predictions
-DTpredicted_data <- DTpredicted_data[order(DTpredicted_data$Probs.1, decreasing=TRUE),] # Sort on Probabilities
-DTpredicted_data$Rank <- 1:nrow(DTpredicted_data) # Add a new variable rank
+DTHLpredicted_data <- data.frame(Probs = DTHLprobTest, Actual_Value= DTHLactualTest ,Predicted_Value = DTHLpredTest )  #Create data frame with prob and predictions
+DTHLpredicted_data <- DTHLpredicted_data[order(DTHLpredicted_data$Probs.1, decreasing=TRUE),] # Sort on Probabilities
+DTHLpredicted_data$Rank <- 1:nrow(DTHLpredicted_data) # Add a new variable rank
 
-library(ggplot2)
+DTCLpredicted_data <- data.frame(Probs = DTCLprobTest, Actual_Value= DTCLactualTest ,Predicted_Value = DTCLpredTest )  #Create data frame with prob and predictions
+DTCLpredicted_data <- DTCLpredicted_data[order(DTCLpredicted_data$Probs.1, decreasing=TRUE),] # Sort on Probabilities
+DTCLpredicted_data$Rank <- 1:nrow(DTCLpredicted_data) # Add a new variable rank
+
 
 ggplot(data=DTpredicted_data, aes(x=Rank, y=Probs.1)) + 
-  geom_point(aes(color = DTpredicted_data$Actual_Value)) + xlab("Index") + ylab("Predicted Probability of getting Cardiovascular Diseases")
+  geom_point(aes(color = DTHLpredicted_data$Actual_Value)) + xlab("Index") + ylab("Predicted Probability of Heating Load")
+
+ggplot(data=DTCLpredicted_data, aes(x=Rank, y=Probs.1)) + 
+  geom_point(aes(color = DTCLpredicted_data$Actual_Value)) + xlab("Index") + ylab("Predicted Probability of Cooling Load")
 
 ### Step 6 - Use model to make predictions on newdata. Note we can specify the newData as data.frame with one or many records
-DTnewData <- data.frame(male = 0, age = 50, education = 0, currentSmoker = 0, cigsPerDay = 9, BPMeds = 0, prevalentStroke = 0, prevalentHyp = 0, diabetes = 0, totChol = 236, sysBP = 102.0, diaBP = 71, BMI = 100, heartRate = 100, glucose = 200 )
+#DTnewData <- data.frame(male = 0, age = 50, education = 0, currentSmoker = 0, cigsPerDay = 9, BPMeds = 0, prevalentStroke = 0, prevalentHyp = 0, diabetes = 0, totChol = 236, sysBP = 102.0, diaBP = 71, BMI = 100, heartRate = 100, glucose = 200 )
 
 # terminal nodes
 # age
@@ -202,8 +258,11 @@ DTnewData <- data.frame(male = 0, age = 50, education = 0, currentSmoker = 0, ci
 # diaBP
 # BMI
 
-DTpredProbability <-predict(DTmodel, DTnewData, type='prob')
-DTpredProbability
+DTHLpredProbability <-predict(DTHLmodel, DTHLnewData, type='prob')
+DTHLpredProbability
+
+DTCLpredProbability <-predict(DTCLmodel, DTCLnewData, type='prob')
+DTCLpredProbability
 #
 ## Performance measures - 
 #
