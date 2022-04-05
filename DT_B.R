@@ -1,3 +1,5 @@
+#Author BH
+
 setwd("//jr1/c$/Data/BujuBanton/msc/comp6115kdda/worksheets/Project1/")
 getwd()
 rm(list = ls())
@@ -7,7 +9,14 @@ options(scipen = 99999)
 #installus <- c("rpart","raprt.plot","pROC","caTools","keras","readr","dplyr","party","partykit")
 #install.packages(installus)
 
-#Authors BH$OTB
+#loading libraries
+library(tidyverse)
+library(ggplot2)
+library(ggthemes)
+library(caret)
+library(elasticnet)
+library(knitr)
+library(matrixStats)
 library(rpart)
 library(readr)
 library(caTools)
@@ -19,32 +28,135 @@ library(rpart)
 library(pROC)
 
 ### Step 1 - Load data and get summaries 
-dataset <- read.csv("./data/ENB2012_data.csv") #%>% # read in the data
-  #mutate(TenYearCHD = factor(TenYearCHD)) # target variable dependent variable to factor
-
+dataset <- read.csv("./data/ENB2012_data.csv") #read in the data
+  
+head(dataset)
 summary(dataset)
+class(dataset)
 str(dataset)
-#how many missing value in each ro/column
-apply(dataset, 2,function(x) sum(is.na(x))) #number of NA per column
+names(dataset)
+
+colnames(dataset) <- c('Relative_Compactness',
+                      'Surface_Area',
+                      'Wall_Area',
+                      'Roof_Area',
+                      'Overall_Height',
+                      'Orientation',
+                      'Glazing_Area',
+                      'Glazing_Area_Distribution',
+                      'Heating_Load',
+                      'Cooling_Load')
+
+#cleaning NAs
+colSums(is.na(dataset))
+
+#cleaning blank observations
+colSums(dataset == "")
+
+boxplot(dataset)
+
+#scaling the data set
+dataset[,1:8] <- scale(dataset[,1:8])
+
+boxplot(dataset)
+
+#check the mean of each feature to make sure that the data set is scaled. Means should be 0
+options(digits = 3)
+format(colMeans(dataset[,1:8]), scientific = FALSE)
+
+#check the standard deviation. Should be 1
+dataset %>% select(-Heating_Load,-Cooling_Load) %>% summarise_if(is.numeric,sd)
+
+#Data Visualization
+
+#the density of heating load
+dataset %>% ggplot(aes(Heating_Load)) +
+  geom_density(aes(fill = "red", color = "red")) +
+  xlab("heating lab") +
+  ggtitle("Density of Heating Load") +
+  theme_economist() +
+  theme(legend.position = "none")
+
+#the density of Cooling load
+dataset %>% ggplot(aes(Cooling_Load)) +
+  geom_density(aes(fill = "blue", color = "blue")) +
+  xlab("cooling lab") +
+  ggtitle("Density of Cooling Load") +
+  theme_economist() +
+  theme(legend.position = "none")
+
+#Both heating and cooling density look similar. scatter plot of surface area and heating load
+dataset %>% ggplot(aes(Surface_Area,Heating_Load)) +
+  geom_point(aes(color = "red")) +
+  xlab("surface area") +
+  ylab("heating load")+
+  ggtitle("Surface area and heat") +
+  theme_economist() +
+  theme(legend.position = "none")
+
+#scatter plot of roof area and heating load
+dataset %>% ggplot(aes(Roof_Area,Heating_Load)) +
+  geom_point(aes(color = "red")) +
+  xlab("roof area") +
+  ylab("heating load")+
+  ggtitle("Roof area and heat") +
+  theme_economist() +
+  theme(legend.position = "none")
+
+#scatter plot of compactness and heating load
+dataset %>% ggplot(aes(Relative_Compactness,Heating_Load)) +
+  geom_point(aes(color = "red")) +
+  xlab("relative compactness") +
+  ylab("heating load") +
+  ggtitle("Relative Compactness and Heating Load") +
+  theme_economist() +
+  theme(legend.position = "none")
+
+#scatter plot of surface area and cooling load
+dataset %>% ggplot(aes(Surface_Area,Cooling_Load)) +
+  geom_point(aes(color = "blue")) +
+  xlab("surface area") +
+  ylab("cooling load")+
+  ggtitle("Surface area and cooling") +
+  theme_economist() +
+  theme(legend.position = "none")
+
+#scatter plot of roof area and cooling load
+dataset %>% ggplot(aes(Roof_Area,Cooling_Load)) +
+  geom_point(aes(color = "blue")) +
+  xlab("roof area") +
+  ylab("cooling load")+
+  ggtitle("Roof area and cooling") +
+  theme_economist() +
+  theme(legend.position = "none")
+
+#scatter plot of compactness and cooling load
+dataset %>% ggplot(aes(Relative_Compactness,Cooling_Load)) +
+  geom_point(aes(color = "blue")) +
+  xlab("relative compactness") +
+  ylab("cooling load") +
+  ggtitle("Relative Compactness and Cooling Load") +
+  theme_economist() +
+  theme(legend.position = "none")
 
 ### Step 2 - Split data into training and testing data 
 set.seed(1)
-DTDataset <-sample.split(Y=dataset$Y1, SplitRatio = 0.7)
+DTDataset <-sample.split(Y=dataset$Heating_Load, SplitRatio = 0.7)
 DTtrainData <- dataset[DTDataset,]
 dim(DTtrainData)
-plot(DTtrainData$Y1)
+hist(DTtrainData$Heating_Load)
 DTtestData <- dataset[!DTDataset,]
 dim(DTtestData)
 
 ### Step 3 - Fit a Decision Tree using training data
-#DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
-#DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
-DTmodel <- rpart(Y1 ~ .,method="class", data=DTtrainData)
-#DTmodel <- rpart(TenYearCHD ~ ., data=DTtrainData)  
+#DTmodel <- rpart(Heating_Load ~ .,method="class", data=DTtrainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
+#DTmodel <- rpart(Heating_Load ~ .,method="class", data=DTtrainData, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
+#DTmodel <- rpart(Heating_Load ~ .,method="class", data=DTtrainData)
+DTmodel <- rpart(Heating_Load ~ ., data=DTtrainData)  
 
 # Fitting the model
 #rpart.plot(DTmodel, type=3, extra = 101, fallen.leaves = F, cex = 0.8) ##try extra with 2,8,4, 101
-rpart.plot(DTmodel)
+rpart.plot(DTmodel,box.palette="blue")
 
 summary(DTmodel) # detailed summary of splits
 DTmodel #prints the rules
@@ -54,7 +166,7 @@ DTmodel #prints the rules
 DTpredTest <- predict(DTmodel, DTtestData, type="class")
 DTprobTest <- predict(DTmodel, DTtestData, type="prob")
 
-DTactualTest <- DTtestData$Y1
+DTactualTest <- DTtestData$Heating_Load
 
 ### Step 5 - Create Confusion Matrix and compute the misclassification error
 DTt <- table(predictions= DTpredTest, actual = DTactualTest)
