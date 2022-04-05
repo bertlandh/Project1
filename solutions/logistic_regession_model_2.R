@@ -33,7 +33,7 @@ dim(testData)
 
 
 ### Step 3 - Fit a Logistic Model using training data
-rModel <- glm(is_high ~ X1+X2, data=trainData, family=binomial(link="logit"))
+rModel <- glm(is_high ~ X1+X2+X3+X4, data=trainData, family=binomial(link="logit"))
 plot(rModel)
 
 #Target Variable = Class, Input Vaiables = All, family = binomial (binary target variable) - Logistic regression using logit
@@ -87,5 +87,5 @@ AUC1
 ## Performnce measures - 
 # Simplicity = 7 coefficients
 # R2 = 0.304
-# Accuracy = 0.6565217 or 0.66
-# AUC = 0.7289 0r 0.73
+# Accuracy = 0.9043478 or 0.9
+# AUC = 0.9431 0r 0.94
