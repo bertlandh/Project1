@@ -3,62 +3,26 @@ getwd()
 rm(list = ls())
 options(scipen = 99999)
 
-#install needed libraries
-#installus <- c("rpart","raprt.plot","pROC","caTools","keras","readr","dplyr","party","partykit")
-#install.packages(installus)
-
-#Authors BH$OTB
-library(rpart)
-library(readr)
-library(caTools)
-library(dplyr)
-library(party)
-library(partykit)
-library(rpart.plot)
-library(rpart)
-library(pROC)
-
-### Step 1 - Load data and get summaries 
-dataset <- read.csv("./data/framingham.csv") %>% # read in the data
-  mutate(TenYearCHD = factor(TenYearCHD)) # target variable dependent variable to factor
-
-## Replacing null values with the mean value
-dataset[is.na(dataset$education),"education"] <- as.integer(mean(dataset$education,na.rm = T))
-dataset[is.na(dataset$cigsPerDay),"cigsPerDay"] <- as.integer(mean(dataset$cigsPerDay, na.rm = T))
-dataset[is.na(dataset$BPMeds),"BPMeds"] <- as.integer(mean(dataset$BPMeds,na.rm = T))
-dataset[is.na(dataset$totChol),"totChol"] <- as.integer(mean(dataset$totChol,na.rm = T))
-dataset[is.na(dataset$BMI),"BMI"] <- as.integer(mean(dataset$BMI,na.rm = T))
-dataset[is.na(dataset$heartRate),"heartRate"] <- as.integer(mean(dataset$heartRate,na.rm = T))
-dataset[is.na(dataset$glucose),"glucose"] <- as.integer(mean(dataset$glucose,na.rm = T))
-
-## Remove null values
-dataset <- dataset[!is.na(dataset$education),]
-dataset <- dataset[!is.na(dataset$cigsPerDay),]
-dataset <- dataset[!is.na(dataset$BPMeds),]
-dataset <- dataset[!is.na(dataset$totChol),]
-dataset <- dataset[!is.na(dataset$BMI),]
-dataset <- dataset[!is.na(dataset$heartRate),]
-dataset <- dataset[!is.na(dataset$glucose),]
-
-summary(dataset)
-str(dataset)
-#how many missing value in each ro/column
-apply(dataset, 2,function(x) sum(is.na(x))) #number of NA per column
+dataset <- "https://goo.gl/At238b" %>%  #DataFlair
+  read.csv %>% # read in the data
+  select(survived, embarked, sex, 
+         sibsp, parch, fare) %>%
+  mutate(embarked = factor(embarked),
+         sex = factor(sex))
 
 ### Step 2 - Split data into training and testing data 
 set.seed(1)
-DTDataset <-sample.split(Y=dataset$TenYearCHD, SplitRatio = 0.7)
+DTDataset <-sample.split(Y=dataset$survived, SplitRatio = 0.7)
 DTtrainData <- dataset[DTDataset,]
 dim(DTtrainData)
-plot(DTtrainData$TenYearCHD)
+plot(DTtrainData$survived)
 DTtestData <- dataset[!DTDataset,]
 dim(DTtestData)
 
 ### Step 3 - Fit a Decision Tree using training data
 #DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
 #DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
-#DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData)
-DTmodel <- rpart(TenYearCHD ~ ., data=DTtrainData)  
+DTmodel <- rpart(survived ~ ., data=DTtrainData)  
 
 # Fitting the model
 #rpart.plot(DTmodel, type=3, extra = 101, fallen.leaves = F, cex = 0.8) ##try extra with 2,8,4, 101
@@ -72,7 +36,7 @@ DTmodel #prints the rules
 DTpredTest <- predict(DTmodel, DTtestData, type="class")
 DTprobTest <- predict(DTmodel, DTtestData, type="prob")
 
-DTactualTest <- DTtestData$TenYearCHD
+DTactualTest <- DTtestData$survived
 
 ### Step 5 - Create Confusion Matrix and compute the misclassification error
 DTt <- table(predictions= DTpredTest, actual = DTactualTest)
@@ -114,18 +78,18 @@ DTpredProbability
 ## Performance measures - 
 #
 #set.seed(1), gini
-# Simplicity = 15 leaves
-# Accuracy = 0.8394965 0r 0.84
-# AUC = 0.6621 0r 0.66
+# Simplicity =  leaves
+# Accuracy = 
+# AUC = 
 #
 #set.seed(1), information
-# Simplicity = 10 leaves
-# Accuracy = 0.8394965 0r 0.84
-# AUC = 0.6621 0r 0.66
+# Simplicity =  leaves
+# Accuracy = 
+# AUC = 
 #
 #set.seed(1), blank
-# Accuracy = 0.8363493 0r 0.84
-# AUC = 0.6627 0r 0.66
+# Accuracy = 0.7582697 0r 0.76
+# AUC = 0.7453 0r 0.75
 #
 ### Step 7 - EXAMINING STABILITY - Creating Decile Plots for Class 1 or 0 Sort 
 #
@@ -159,5 +123,5 @@ while (DTx < nrow(DTpredicted_data)) {
 #------Stability plot (correct preds per decile)
 plot(DTdecile$Decile,DTdecile$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main="Stability Plot for Class 1")
 
-write.csv(dataset,file = "./output/DT_BO_CHD.csv",row.names = FALSE)
-dataset <- read.csv("./output/DT_BO_CHD.csv",header = TRUE)
+write.csv(dataset,file = "./output/DT2_BO_CHD.csv",row.names = FALSE)
+dataset <- read.csv("./output/DT2_BO_CHD.csv",header = TRUE)
