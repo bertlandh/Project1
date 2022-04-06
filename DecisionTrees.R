@@ -15,7 +15,10 @@ pacman::p_load(  # Use p_load function from pacman
   pacman,        # Load/unload packages
   rattle,        # Pretty plot for decision trees
   rio,           # Import/export data
-  tidyverse      # So many reasons
+  tidyverse,     # So many reasons
+  rpart,         # Fit a rpart model
+  rpart.plot,    # Plot an rpart model
+  pROC           # Tools for visualizing
 )
 
 # Set random seed to reproduce the results
@@ -109,27 +112,29 @@ cmtest$table %>%
 # Print the confusion matrix
 cmtest %>% print()
 
-
-
 #############my code
 ### Step 3 - Fit a Decision Tree using training data
-#DTmodel <- rpart(Heating_Load ~ .,method="class", data=DTtrainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
-DTHLmodel <- rpart(Heating_Load ~ ., data=DTHLtrainData)
+DTmodel1 <- rpart(y ~ .,method="class", data=trn, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
+DTmodel2 <- rpart(y ~ .,method="class", data=trn, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
 
 # Fitting the model
-rpart.plot(DTHLmodel, type=3, extra = 101, fallen.leaves = F, cex = 0.8,box.palette="blue")
-rpart.plot(DTHLmodel,box.palette="blue")
+rpart.plot(DTmodel1, type=3, extra = 101, fallen.leaves = F, cex = 0.8,box.palette="blue")
+rpart.plot(DTmodel1,box.palette="blue")
+rpart.plot(DTmodel2,box.palette="blue")
 
-summary(DTHLmodel) # detailed summary of splits
-DTHLmodel #prints the rules
+summary(DTmodel1) # detailed summary of splits
+DTmodel1 #prints the rules
+
+summary(DTmodel2) # detailed summary of splits
+DTmodel2 #prints the rules
 
 
 ###Step 4 - Use the fitted model to do predictions for the test data
 
-DTHLpredTest <- predict(DTHLmodel, DTHLtestData, type="class")
-DTHLprobTest <- predict(DTHLmodel, DTHLtestData, type="prob")
+DTHLpredTest <- predict(DTmodel1, tst, type="class")
+DTHLprobTest <- predict(DTmodel1, tst, type="prob")
 
-DTHLactualTest <- DTHLtestData$Heating_Load
+DTHLactualTest <- tst$y
 
 ### Step 5 - Create Confusion Matrix and compute the misclassification error
 DTHLt <- table(predictions= DTHLpredTest, actual = DTHLactualTest)
@@ -140,7 +145,7 @@ DTHLaccuracy
 ## Visualization of probabilities
 hist(DTHLprobTest[,2], breaks = 100)
 
-### ROC and Area Under the Curve
+## ROC and Area Under the Curve
 DTHLROC <- roc(DTHLactualTest, DTHLprobTest[,2])
 plot(DTHLROC, col="blue")
 DTHLAUC <- auc(DTHLROC)
@@ -157,17 +162,10 @@ ggplot(data=DTpredicted_data, aes(x=Rank, y=Probs.1)) +
 ### Step 6 - Use model to make predictions on newdata. Note we can specify the newData as data.frame with one or many records
 #DTnewData <- data.frame(male = 0, age = 50, education = 0, currentSmoker = 0, cigsPerDay = 9, BPMeds = 0, prevalentStroke = 0, prevalentHyp = 0, diabetes = 0, totChol = 236, sysBP = 102.0, diaBP = 71, BMI = 100, heartRate = 100, glucose = 200 )
 
-# terminal nodes
-# age
-# glucose
-# diaBP
-# BMI
-
 DTHLpredProbability <-predict(DTHLmodel, DTHLnewData, type='prob')
 DTHLpredProbability
 
-
-### Step 7 - EXAMINING STABILITY - Creating Decile Plots for Class 1 or 0 Sort 
+## Step 7 - EXAMINING STABILITY - Creating Decile Plots for Class 1 or 0 Sort 
 #
 #-----Create empty df-------
 DTdecile<- data.frame(matrix(ncol=4,nrow = 0))
@@ -207,7 +205,6 @@ plot(DTdecile$Decile,DTdecile$per_correct_preds,type = "l",xlab = "Decile",ylab 
 # Reference: Spam: 72 / 450
 # Sensitivity = 796 / (796 + 62) = .9277
 # Specificity = 450 / (450 + 72) = .8621
-
 
 ##  - 
 #

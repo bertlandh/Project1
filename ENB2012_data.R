@@ -30,13 +30,15 @@ summary(df)
 class(df)
 str(df)
 
+boxplot(df$Y1)
+hist(df$Y1)
 # Rename the class label as y; change values 0 to "notSpam"
 # and 1 to "spam"; convert to factor
 df %<>% 
   rename(y = Y1) %>%   # Rename class variable as `y`
   mutate(
     y = ifelse(
-      y >= 20, 
+      y >= 30, 
       "High", 
       "Low"
     )
