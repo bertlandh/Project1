@@ -114,8 +114,10 @@ cmtest %>% print()
 
 #############my code
 ### Step 3 - Fit a Decision Tree using training data
-DTmodel1 <- rpart(y ~ .,method="class", data=trn, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
-DTmodel2 <- rpart(y ~ .,method="class", data=trn, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
+#DTmodel1 <- rpart(y ~ .,method="class", data=trn, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
+#DTmodel1 <- rpart(y ~ .,method="class", data=trn, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
+DTHLmodel <- rpart(y ~ ., data=trn)
+
 
 # Fitting the model
 rpart.plot(DTmodel1, type=3, extra = 101, fallen.leaves = F, cex = 0.8,box.palette="blue")
@@ -125,8 +127,8 @@ rpart.plot(DTmodel2,box.palette="blue")
 summary(DTmodel1) # detailed summary of splits
 DTmodel1 #prints the rules
 
-summary(DTmodel2) # detailed summary of splits
-DTmodel2 #prints the rules
+#summary(DTmodel2) # detailed summary of splits
+#DTmodel2 #prints the rules
 
 
 ###Step 4 - Use the fitted model to do predictions for the test data
@@ -200,27 +202,20 @@ plot(DTdecile$Decile,DTdecile$per_correct_preds,type = "l",xlab = "Decile",ylab 
 # PERFORMANCE MEASURES ##################################################
 
 # Decision Tree Model
-# Accuracy: .9029
-# Reference: Not Spam: 796 / 62
-# Reference: Spam: 72 / 450
-# Sensitivity = 796 / (796 + 62) = .9277
-# Specificity = 450 / (450 + 72) = .8621
-
-##  - 
 #
 #set.seed(1), gini
 # Simplicity = 15 leaves
-# Accuracy = 0.8394965 0r 0.84
-# AUC = 0.6621 0r 0.66
+# Accuracy = 0.9090909 0r 0.91
+# AUC = 0.957 0r 0.96
 #
 #set.seed(1), information
 # Simplicity = 10 leaves
-# Accuracy = 0.8394965 0r 0.84
-# AUC = 0.6621 0r 0.66
+# Accuracy = 0.9220779 0r 0.92
+# AUC = 0.9733 0r 0.97
 #
 #set.seed(1), blank
-# Accuracy = 0.8363493 0r 0.84
-# AUC = 0.6627 0r 0.66
+# Accuracy = 0.9090909 0r 0.91
+# AUC = 0.957 0r 0.96
 #
 
 # CLEAN UP #################################################
