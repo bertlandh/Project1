@@ -24,8 +24,10 @@ summary(dataset)
 dataset$is_high <- dataset$Y1_ctype
 dataset$is_high[dataset$Y1_ctype == "High"] <- 1
 dataset$is_high[dataset$Y1_ctype == "Low"] <- 0
-dataset$Y1_ctype <- NULL
-dataset
+dataset$Y1_ctype <- NULL 
+dataset$is_high <- as.numeric(dataset$is_high)
+head(dataset)
+str(dataset)
 
 #--------------------------------------------------------------------------
 ### Step 2 - Split data into training and testing data 
@@ -53,7 +55,7 @@ colnames(testY) <- c("High") #Modify variable name to Class
 ## newTrain -> Change training (X & Y) data into correct format to build model - convert X and Y to vectors and matrices
 newTrainY <- as.vector(trainY)
 newTrainY <- as.matrix(newTrainY)
-newTrainY <- as.numeric(newTrainY)
+#newTrainY <- as.numeric(newTrainY)
 #combine all individuals vectors
 newTrainX <- cbind(as.vector(trainX$X1), as.vector(trainX$X2),
                    as.vector(trainX$X3), as.vector(trainX$X4),
@@ -66,7 +68,7 @@ newTrainX <- cbind(as.vector(trainX$X1), as.vector(trainX$X2),
 ## newTest -> Change test (X & Y) data into correct format to build model - convert X and Y to vectors and matrices
 newTestY <- as.vector(testY)
 newTestY <- as.matrix(newTestY)
-newTestY <- as.numeric(newTestY)
+#newTestY <- as.numeric(newTestY)
 
 #combine all individuals vectors
 newTestX <- cbind(as.vector(testX$X1), as.vector(testX$X2),
@@ -119,10 +121,10 @@ probTest <- model %>% predict(newTestX)
 #Recode probability to classification
 predVal <- ifelse(probTest >= 0.5, 1, 0)
 predTest <- factor(predVal, levels = c(0,1))
-#predTest[0:5]
+predTest[0:5]
 
 actualTest <-testY$High
-#actualTest[0:5]
+actualTest[0:5]
 
 #------------------------------------------------------
 
@@ -152,6 +154,37 @@ predicted_data$Rank <- 1:nrow(predicted_data) # Add a new variable rank
 library(ggplot2)
 
 ggplot(data=predicted_data, aes(x=Rank, y=Probs)) + 
-  geom_point(aes(color = predicted_data$Actual_Value)) + xlab("Index") + ylab("Predicted Probability of getting Diabetes")
+  geom_point(aes(color = predicted_data$Actual_Value)) + xlab("Index") + ylab("Predicted Probability of getting High Heating Load")
+
+### Step 6 - EXAMINING STABILITY - Creating Decile Plots
+
+#-----Create empty df-------
+decileDF<- data.frame(matrix(ncol=3,nrow = 0))
+colnames(decileDF)<- c("Decile","per_correct_preds","No_correct_Preds","cum_preds")
+#-----Initialize varables
+num_of_deciles=10
+Obs_per_decile<-nrow(predicted_data)/num_of_deciles
+decile_count=1
+start=1
+stop=(start-1) + Obs_per_decile
+prev_cum_pred<-0
+x=0
+#-----Loop through DF and create deciles
+while (x < nrow(predicted_data)) {
+  subset<-predicted_data[c(start:stop),]
+  correct_count<- ifelse(subset$Actual_Value==subset$Predicted_Value,1,0)
+  no_correct_Preds<-sum(correct_count,na.rm = TRUE)
+  per_correct_Preds<-(no_correct_Preds/Obs_per_decile)*100
+  cum_preds<-no_correct_Preds+prev_cum_pred
+  addRow<-data.frame("Decile"=decile_count,"per_correct_preds"=per_correct_Preds,"No_correct_Preds"=no_correct_Preds,"cum_preds"=cum_preds)
+  decileDF<-rbind(decileDF,addRow)
+  prev_cum_pred<-prev_cum_pred+no_correct_Preds
+  start<-stop+1
+  stop=(start-1) + Obs_per_decile
+  x<-x+Obs_per_decile
+  decile_count<-decile_count+1
+}
+#------Stability plot (correct preds per decile)
+plot(decileDF$Decile,decileDF$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main="Stability Plot for NN")
 
 
