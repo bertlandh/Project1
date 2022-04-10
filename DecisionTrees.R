@@ -35,110 +35,25 @@ trn <- import("data/ENB2012_trn.rds")
 # Import testing data `tst`
 tst <- import("data/ENB2012_tst.rds")
 
-# MODEL TRAINING DATA ######################################
-
-# set training control parameters
-ctrlparam <- trainControl(
-  method  = "repeatedcv",   # method
-  number  = 5,              # 5 fold
-  repeats = 3               # 3 repeats
-)
-
-# Train decision tree on training data (takes a moment).
-# First method tunes the complexity parameter.
-dt1 <- train(
-  y ~ .,                  # Use all vars to predict spam
-  data = trn,             # Use training data
-  method = "rpart",       # Tune the complexity parameter
-  trControl = ctrlparam,  # Control parameters
-  tuneLength = 10         # Try ten parameters
-)
-
-# Show processing summary
-dt1
-
-# Plot accuracy by complexity parameter values
-dt1 %>% plot()
-dt1 %>% plot(ylim = c(0, 1))  # Plot with 0-100% range
-
-# Second method tunes the maximum tree depth
-dt2 <- train(
-  y ~ .,                  # Use all vars to predict spam
-  data = trn,             # Use training data
-  method = "rpart2",      # Tune the maximum tree depth
-  trControl = ctrlparam,  # Control parameters
-  tuneLength = 10         # Try ten parameters
-)
-
-# Show processing summary
-dt2
-
-# Plot the accuracy for different parameter values
-dt2 %>% plot()
-dt2 %>% plot(ylim = c(0, 1))  # Plot with 0-100% range
-
-# Select the final model depending upon final accuracy
-finaldt <- if (max(dt1$results$Accuracy) > 
-               max(dt2$results$Accuracy)) {
-  dt1
-} else {
-  dt2
-}
-
-# Description of final training model
-finaldt$finalModel
-
-# Plot the final decision tree model
-finaldt$finalModel %>%
-  fancyRpartPlot(
-    main = "Predicting Heating_Load",
-    sub  = "Training Data"
-  )
-
-# VALIDATE ON TEST DATA ####################################
-
-# Predict on test set
-pred <- finaldt %>%
-  predict(newdata = tst)
-
-# Accuracy of model on test data
-cmtest <- pred %>%
-  confusionMatrix(reference = tst$y)
-
-# Plot the confusion matrix
-cmtest$table %>% 
-  fourfoldplot(color = c("red", "lightblue"))
-
-# Print the confusion matrix
-cmtest %>% print()
-
-#############my code
-### Step 3 - Fit a Decision Tree using training data
-#DTmodel1 <- rpart(y ~ .,method="class", data=trn, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
+# DECISON TREES  ####################################
+## Fit a Decision Tree using training data  ####################################
+DTmodel1 <- rpart(y ~ .,method="class", data=trn, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
 #DTmodel1 <- rpart(y ~ .,method="class", data=trn, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
-DTHLmodel <- rpart(y ~ ., data=trn)
 
-
-# Fitting the model
+## Fitting the model   ####################################
 rpart.plot(DTmodel1, type=3, extra = 101, fallen.leaves = F, cex = 0.8,box.palette="blue")
 rpart.plot(DTmodel1,box.palette="blue")
-rpart.plot(DTmodel2,box.palette="blue")
 
 summary(DTmodel1) # detailed summary of splits
 DTmodel1 #prints the rules
 
-#summary(DTmodel2) # detailed summary of splits
-#DTmodel2 #prints the rules
-
-
-###Step 4 - Use the fitted model to do predictions for the test data
-
+## Use the fitted model to do predictions for the test data  ####################################
 DTHLpredTest <- predict(DTmodel1, tst, type="class")
 DTHLprobTest <- predict(DTmodel1, tst, type="prob")
 
 DTHLactualTest <- tst$y
 
-### Step 5 - Create Confusion Matrix and compute the misclassification error
+## Create Confusion Matrix and compute the misclassification error  ####################################
 DTHLt <- table(predictions= DTHLpredTest, actual = DTHLactualTest)
 DTHLt # Confusion matrix
 DTHLaccuracy <- sum(diag(DTHLt))/sum(DTHLt)
@@ -153,28 +68,32 @@ plot(DTHLROC, col="blue")
 DTHLAUC <- auc(DTHLROC)
 DTHLAUC
 
-#A new dataframe with Predicted Prob, Actual Value and Predicted Value
+# A new dataframe with Predicted Prob, Actual Value and Predicted Value
 DTHLpredicted_data <- data.frame(Probs = DTHLprobTest, Actual_Value= DTHLactualTest ,Predicted_Value = DTHLpredTest )  #Create data frame with prob and predictions
-DTHLpredicted_data <- DTHLpredicted_data[order(DTHLpredicted_data$Probs.1, decreasing=TRUE),] # Sort on Probabilities
+DTHLpredicted_data <- DTHLpredicted_data[order(DTHLpredicted_data$Probs.High, decreasing=TRUE),] # Sort on Probabilities
 DTHLpredicted_data$Rank <- 1:nrow(DTHLpredicted_data) # Add a new variable rank
 
-ggplot(data=DTpredicted_data, aes(x=Rank, y=Probs.1)) + 
+ggplot(data=DTHLpredicted_data, aes(x=Rank, y=Probs.High)) + 
   geom_point(aes(color = DTHLpredicted_data$Actual_Value)) + xlab("Index") + ylab("Predicted Probability of Heating Load")
 
-### Step 6 - Use model to make predictions on newdata. Note we can specify the newData as data.frame with one or many records
-#DTnewData <- data.frame(male = 0, age = 50, education = 0, currentSmoker = 0, cigsPerDay = 9, BPMeds = 0, prevalentStroke = 0, prevalentHyp = 0, diabetes = 0, totChol = 236, sysBP = 102.0, diaBP = 71, BMI = 100, heartRate = 100, glucose = 200 )
+## Use model to make predictions on newdata. Note we can specify the newData as data.frame with one or many records  ####################################
+#DTHLnewData <- data.frame(X1=8,X2=2.5,X3=4.857143,X4=2,X5=7,X6=4,X8=4) # High
+DTHLnewData <- data.frame(X1=2.75,X2=7.75,X3=3.571429,X4=10,X5=3.5,X6=2,X8=2) # Low
+DTHLnewData$X5 <- as.factor(DTHLnewData$X5)
+DTHLnewData$X6 <- as.factor(DTHLnewData$X6)
+DTHLnewData$X8 <- as.factor(DTHLnewData$X8)
 
-DTHLpredProbability <-predict(DTHLmodel, DTHLnewData, type='prob')
+DTHLpredProbability <-predict(DTmodel1, DTHLnewData, type='prob')
 DTHLpredProbability
 
-## Step 7 - EXAMINING STABILITY - Creating Decile Plots for Class 1 or 0 Sort 
+# EXAMINING STABILITY - Creating Decile Plots for Class High or Low Sort  ####################################
 #
-#-----Create empty df-------
+#-----Create empty df
 DTdecile<- data.frame(matrix(ncol=4,nrow = 0))
 colnames(DTdecile)<- c("Decile","per_correct_preds","No_correct_Preds","cum_preds")
 #-----Initialize variables
 DTnum_of_deciles = 10
-DTObs_per_decile <- nrow(DTpredicted_data)/DTnum_of_deciles
+DTObs_per_decile <- nrow(DTHLpredicted_data)/DTnum_of_deciles
 DTdecile_count = 1
 DTstart = 1
 DTstop = (DTstart-1) + DTObs_per_decile
@@ -182,8 +101,8 @@ DTprev_cum_pred <- 0
 DTx = 0
 
 #-----Loop through DF and create deciles
-while (DTx < nrow(DTpredicted_data)) {
-  DTsubset <- DTpredicted_data[c(DTstart:DTstop),]
+while (DTx < nrow(DTHLpredicted_data)) {
+  DTsubset <- DTHLpredicted_data[c(DTstart:DTstop),]
   DTcorrect_count <- ifelse(DTsubset$Actual_Value == DTsubset$Predicted_Value, 1, 0)
   DTno_correct_Preds <- sum(DTcorrect_count, na.rm = TRUE)
   DTper_correct_Preds <- (DTno_correct_Preds / DTObs_per_decile) * 100
@@ -212,10 +131,6 @@ plot(DTdecile$Decile,DTdecile$per_correct_preds,type = "l",xlab = "Decile",ylab 
 # Simplicity = 10 leaves
 # Accuracy = 0.9220779 0r 0.92
 # AUC = 0.9733 0r 0.97
-#
-#set.seed(1), blank
-# Accuracy = 0.9090909 0r 0.91
-# AUC = 0.957 0r 0.96
 #
 
 # CLEAN UP #################################################

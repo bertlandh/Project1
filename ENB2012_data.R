@@ -32,21 +32,21 @@ class(df)
 str(df)
 
 
-#X1 - Relative compactness
+## X1 - Relative compactness ################################
 hist(df$X1)
 # --> clean involve making the values between 0-10
 unique(df$X1)
 R <- (df$X1 - min(df$X1))/(max(df$X1) - min(df$X1)) * (10-1) + 1
 df$X1 <- R
 
-#X2 - Surface Area
+## X2 - Surface Area ################################
 hist(df$X2)
 # --> clean involve making the values between 0-10
 # --> data, mean and median are similar 
 R <- (df$X2 - min(df$X2))/(max(df$X2) - min(df$X2)) * (10-1) + 1
 df$X2 <- R
 
-#X3 - Wall Area
+## X3 - Wall Area ################################
 hist(df$X3)
 # --> relative normal distribution
 # --> cleaning involve making data between 0-10
@@ -54,7 +54,7 @@ hist(df$X3)
 R <- (df$X3 - min(df$X3))/(max(df$X3) - min(df$X3)) * (10-1) + 1
 df$X3 <- R
 
-#X4 - Roof Area
+## X4 - Roof Area ################################
 hist(df$X4)
 boxplot(df$X4)
 # --> make data between 0-10
@@ -71,19 +71,19 @@ df[df$X4<low,]
 R <- (df$X4 - min(df$X4))/(max(df$X4) - min(df$X4)) * (10-1) + 1
 df$X4 <- R
 
-#X5 - Overall Height
+## X5 - Overall Height ################################
 hist(df$X5)
 #--> is a categorical value with 3.5, 7
 df$X5 <- as.factor(df$X5)
 
-#X6 - Orientation
+## X6 - Orientation ################################
 hist(df$X6)
 # --> also a factor variable with 2,3,4,5 uniformly distributed
 unique(df$X6)
 
 df$X6 <- as.factor(df$X6)
 
-#X7 - Glazing Area
+## X7 - Glazing Area ################################
 #glazing refers to the installation of glass in windows, doors, or any other fixed opening
 hist(df$X7)
 plot(df$Y1,df$X7)
@@ -94,7 +94,7 @@ unique(df$X7)
 # this is removed since the data is represented in X8
 df$X7 <- NULL
 
-#X8 - Glazing area distribution
+## X8 - Glazing area distribution ################################
 hist(df$X8)
 unique(df$X8)
 # --> this field describes the states of the X7 variable as factors 0-5; i.e. 6 states of glazing
@@ -104,7 +104,7 @@ df$X8 <- as.factor(df$X8)
 # where these houses were located, or what time of the year the data was collected for energy efficiency
 
 
-#Y1 - Heating loads
+## Y1 - Heating loads ################################
 #The heating load is the amount of heat energy that would need to be added to a space to maintain 
 #the temperature in an acceptable range. 
 # hist(df$Y1)
@@ -135,8 +135,8 @@ df$X8 <- as.factor(df$X8)
 
 boxplot(df$Y1)
 hist(df$Y1)
-# Rename the class label as y; change values 0 to "notSpam"
-# and 1 to "spam"; convert to factor
+# Rename the class label as y; change values to
+# "High" or "Low"; convert to factor
 df %<>% 
   rename(y = Y1) %>%   # Rename class variable as `y`
   mutate(
@@ -154,7 +154,6 @@ df %<>%
   pull(y) %>%  # Return a vector instead of a dataframe
   fct_count()  # Count frequencies in factor order
 
-#-----------------------------------------------------------------------------------------------------------
 #Clean and Transformed data
 str(df)
 summary(df)
@@ -191,7 +190,7 @@ trn %>%
 trn %>% 
   select(y, X1, X6, X5)  %>%
   ggpairs(
-    aes(color = trn$y),  # Color code is spam vs. not spam
+    aes(color = trn$y),  # Color code is High vs. Low
     lower = list(
       combo = wrap(
         "facethist", 
@@ -199,16 +198,6 @@ trn %>%
       )
     )
   )
-
-# Stacked histograms of a few variables; note the sparse
-# nature of text data
-# trn %>% 
-#   select(X1, X2, X3, X4, X5, X6, X8, y) %>% 
-#   gather(var, val, -y) %>%  # Gather key value pairs
-#   ggplot(aes(x = val, group = y, fill = y)) +
-#   geom_histogram(binwidth = 1) +
-#   facet_wrap(~var, ncol = 3) +
-#   theme(legend.position = "bottom")
 
 # SAVE DATA ################################################
 
