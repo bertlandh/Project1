@@ -41,8 +41,8 @@ DTmodel1 <- rpart(y ~ .,method="class", data=trn, parms = list (split ="informat
 #DTmodel1 <- rpart(y ~ .,method="class", data=trn, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
 
 ## Fitting the model   ####################################
-rpart.plot(DTmodel1, type=3, extra = 101, fallen.leaves = F, cex = 0.8)
-rpart.plot(DTmodel1)
+rpart.plot(DTmodel1, type=3, extra = 101, fallen.leaves = F, cex = 0.8,box.palette="blue")
+rpart.plot(DTmodel1,box.palette="blue")
 
 summary(DTmodel1) # detailed summary of splits
 DTmodel1 #prints the rules

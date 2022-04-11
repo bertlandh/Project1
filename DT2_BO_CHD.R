@@ -10,6 +10,9 @@ dataset <- "https://goo.gl/At238b" %>%  #DataFlair
   mutate(embarked = factor(embarked),
          sex = factor(sex))
 
+path <- "https://github.com/bertlandh/Project1/blob/master/data/framingham.csv"
+datass <- read.csv(path)
+
 ### Step 2 - Split data into training and testing data 
 set.seed(1)
 DTDataset <-sample.split(Y=dataset$survived, SplitRatio = 0.7)

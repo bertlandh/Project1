@@ -57,8 +57,8 @@ dim(DTtestData)
 ### Step 3 - Fit a Decision Tree using training data
 #DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))
 #DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData, parms = list (split ="gini"), control = rpart.control(minsplit = 15, maxdepth = 5))  
-#DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData)
-DTmodel <- rpart(TenYearCHD ~ ., data=DTtrainData)  
+DTmodel <- rpart(TenYearCHD ~ .,method="class", data=DTtrainData)
+#DTmodel <- rpart(TenYearCHD ~ ., data=DTtrainData)  
 
 # Fitting the model
 #rpart.plot(DTmodel, type=3, extra = 101, fallen.leaves = F, cex = 0.8) ##try extra with 2,8,4, 101
