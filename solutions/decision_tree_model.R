@@ -30,10 +30,10 @@ set.seed(1)
 # in "ENB2012_data.R"
 
 # Import training data `trn`
-trn <- import("data/ENB2012_trn.rds")
+trn <- import("ENB2012_trn.rds")
 
 # Import testing data `tst`
-tst <- import("data/ENB2012_tst.rds")
+tst <- import("ENB2012_tst.rds")
 
 # DECISON TREES  ####################################
 ## Fit a Decision Tree using training data  ####################################
@@ -116,7 +116,7 @@ while (DTx < nrow(DTHLpredicted_data)) {
   DTdecile_count <- DTdecile_count + 1
 }
 #------Stability plot (correct preds per decile)
-plot(DTdecile$Decile,DTdecile$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main="Stability Plot for Class 1")
+plot(DTdecile$Decile,DTdecile$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main="Stability Plot for DT")
 
 # PERFORMANCE MEASURES ##################################################
 

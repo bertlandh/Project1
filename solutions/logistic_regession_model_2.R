@@ -2,7 +2,7 @@ library(caTools)
 library(pROC)
 
 ### Step 1 - Load data and get summaries
-#file <pima-indians-diabetes_headings.csv>
+#file enerdata_clean_transformed.csv
 EEDataset <- read.csv(file.choose())
 summary(EEDataset)
 str(EEDataset)
@@ -24,6 +24,7 @@ EEDataset$is_high[EEDataset$Y1_ctype == "Low"] <- 0
 EEDataset$Y1_ctype <- NULL
 EEDataset
 EEDataset$is_high <- as.numeric(EEDataset$is_high)
+
 set.seed(20)
 newDataset <-sample.split(Y=EEDataset$is_high, SplitRatio = 0.7)
 trainData <- EEDataset[newDataset,]
@@ -34,7 +35,9 @@ dim(testData)
 
 ### Step 3 - Fit a Logistic Model using training data
 rModel <- glm(is_high ~ X1+X2+X3+X4, data=trainData, family=binomial(link="logit"))
+par(mfrow=c(2,2))
 plot(rModel)
+par(mfrow=c(1,1))
 
 #Target Variable = Class, Input Vaiables = All, family = binomial (binary target variable) - Logistic regression using logit
 summary(rModel)
@@ -89,3 +92,43 @@ AUC1
 # R2 = 0.304
 # Accuracy = 0.9043478 or 0.9
 # AUC = 0.9431 0r 0.94
+
+
+#--------------------
+#A new dataframe with Predicted Prob, Actual Value and Predicted Value
+predicted_data <- data.frame(Probs = probTest, Actual_Value= actualTest ,Predicted_Value = predTest )  #Create data frame with prob and predictions
+predicted_data <- predicted_data[order(predicted_data$Probs, decreasing=TRUE),] # Sort on Probabilities
+predicted_data$Rank <- 1:nrow(predicted_data) # Add a new variable rank
+
+
+
+### EXAMINING STABILITY - Creating Decile Plots
+
+#-----Create empty df-------
+decileDF<- data.frame(matrix(ncol=4,nrow = 0))
+colnames(decileDF)<- c("Decile","per_correct_preds","No_correct_Preds","cum_preds")
+#-----Initialize varables
+num_of_deciles=10
+Obs_per_decile<-nrow(predicted_data)/num_of_deciles
+decile_count=1
+start=1
+stop=(start-1) + Obs_per_decile
+prev_cum_pred<-0
+x=0
+#-----Loop through DF and create deciles
+while (x < nrow(predicted_data)) {
+  subset<-predicted_data[c(start:stop),]
+  correct_count<- ifelse(subset$Actual_Value==subset$Predicted_Value,1,0)
+  no_correct_Preds<-sum(correct_count,na.rm = TRUE)
+  per_correct_Preds<-(no_correct_Preds/Obs_per_decile)*100
+  cum_preds<-no_correct_Preds+prev_cum_pred
+  addRow<-data.frame("Decile"=decile_count,"per_correct_preds"=per_correct_Preds,"No_correct_Preds"=no_correct_Preds,"cum_preds"=cum_preds)
+  decileDF<-rbind(decileDF,addRow)
+  prev_cum_pred<-prev_cum_pred+no_correct_Preds
+  start<-stop+1
+  stop=(start-1) + Obs_per_decile
+  x<-x+Obs_per_decile
+  decile_count<-decile_count+1
+}
+#------Stability plot (correct preds per decile)
+plot(decileDF$Decile,decileDF$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main="Stability Plot for LR2")
